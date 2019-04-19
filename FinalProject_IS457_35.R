@@ -19,14 +19,16 @@ missingvals <- sapply(airbnb, function(x) sum(is.na(x)))
 # Number of missing values
 missingvals[missingvals>0]
 
-# Percen missing values
+# Percent missing values
 round(missingvals[missingvals >0]/length(airbnb[,1]), 2)
 summary(airbnb[,missingvals>0])
 
 #sapply(airbnb[,missingvals>0], function(x) str(x))
 
-# Clean the cleaning_fee (drop $, as numeric)
-airbnb$cleaning_fee <- as.numeric(gsub("^\\$","",airbnb$cleaning_fee))
+# Clean the prices (drop $ and comma, as.numeric)
+airbnb$price <- as.numeric(gsub("^\\$|,","",airbnb$price))
+airbnb$cleaning_fee <- as.numeric(gsub("^\\$|,","",airbnb$cleaning_fee))
+airbnb$extra_people <- as.numeric(gsub("^\\$|,","",airbnb$extra_people))
 
 airbnb$host_since <- as.Date(airbnb$host_since, format = "%m/%d/%y")
 
@@ -66,7 +68,12 @@ airbnb$host_since <- as.Date(airbnb$host_since, format = "%m/%d/%y")
 # Q2
 # Conduct a preliminary exploration and describe what you find interesting or unexpected.
 
+# Property types
+table(as.factor(airbnb$property_type))
+barplot(table(as.factor(airbnb$property_type)))
 
+# Minimum nights
+summary(airbnb$minimum_nights)
 
 # Q3
 # Explore comprehensively with charts, tables, and graphs
