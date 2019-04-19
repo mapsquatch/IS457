@@ -12,16 +12,23 @@ airbnb <- read.csv(paste(getwd(),"/data/AirbnbSydney.csv", sep = ""), stringsAsF
 dim(airbnb)
 class(airbnb)
 summary(airbnb)
+
+# Calculate missing values
 missingvals <- sapply(airbnb, function(x) sum(is.na(x)))
 
 # Number of missing values
 missingvals[missingvals>0]
 
-# Percent missing values
+# Percen missing values
 round(missingvals[missingvals >0]/length(airbnb[,1]), 2)
 summary(airbnb[,missingvals>0])
 
-sapply(airbnb[,missingvals>0], function(x) str(x))
+#sapply(airbnb[,missingvals>0], function(x) str(x))
+
+# Clean the cleaning_fee (drop $, as numeric)
+airbnb$cleaning_fee <- as.numeric(gsub("^\\$","",airbnb$cleaning_fee))
+
+airbnb$host_since <- as.Date(airbnb$host_since, format = "%m/%d/%y")
 
 # My answer
 # Neighborhood_overview and house_rules are both text-heavy (paragraph or more) fields, NA on 6 and 15%.
