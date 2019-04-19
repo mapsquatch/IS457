@@ -1,0 +1,8 @@
+function(...){
+    # funcname:
+    # inputs  :
+    # outputs : 
+    # purpose :
+    # related :
+    # auth/dt : ID35, 
+}
