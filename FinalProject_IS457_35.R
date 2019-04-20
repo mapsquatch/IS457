@@ -8,7 +8,7 @@
 # 1.1: What variables have missing values? What types/forms of missing values are they?
 
 # airbnb <- read.csv("http://more.atorium.net/AirbnbSydney.csv") #broken?
-airbnb <- read.csv(paste(getwd(),"/data/AirbnbSydney.csv", sep = ""), stringsAsFactors = FALSE, na.strings = c("N/A",""))
+airbnb <- read.csv(paste(getwd(),"/data/AirbnbSydney.csv", sep = ""), stringsAsFactors = FALSE, na.strings = c("N/A","", "NA"))
 dim(airbnb)
 class(airbnb)
 summary(airbnb)
@@ -30,7 +30,17 @@ airbnb$price <- as.numeric(gsub("^\\$|,","",airbnb$price))
 airbnb$cleaning_fee <- as.numeric(gsub("^\\$|,","",airbnb$cleaning_fee))
 airbnb$extra_people <- as.numeric(gsub("^\\$|,","",airbnb$extra_people))
 
+# Clean percents
+airbnb$host_response_rate <- as.numeric(gsub("%$","", airbnb$host_response_rate))
+
+# Store host_since as a date
 airbnb$host_since <- as.Date(airbnb$host_since, format = "%m/%d/%y")
+
+# Store logicals as logical. R requires a capial T or F
+airbnb$host_is_superhost <- as.logical(toupper(airbnb$host_is_superhost))
+airbnb$host_identity_verified <- as.logical(toupper(airbnb$host_identity_verified))
+
+
 
 # My answer
 # Neighborhood_overview and house_rules are both text-heavy (paragraph or more) fields, NA on 6 and 15%.
@@ -47,11 +57,22 @@ airbnb$host_since <- as.Date(airbnb$host_since, format = "%m/%d/%y")
 # response data at 23%), I will still be left with over 8,000 observations, which is a high enough n value
 # to generate valid results.
 
+#Distribution of response_time
+table(as.factor(airbnb$host_response_time))
+# Maybe these are tied to communication rating?
+by(as.numeric(airbnb$review_scores_communication), as.factor(airbnb$host_response_time), mean)
+
+# Which obs have NA response
+airbnb[is.na(airbnb$bathrooms),]
+
 # 1.3: Describe how your choice method may impact later analysis.
 # The reduced n values 
 
 # 1.4: Implement methods to deal with missing values.
 
+# NA Bedrooms
+# Description calls this one a studio (no bedroom)
+airbnb$bedrooms[1239] <- 0
 
 # 1.5: After dealing with missing values, show the dimensions of the data.
 
@@ -67,13 +88,17 @@ airbnb$host_since <- as.Date(airbnb$host_since, format = "%m/%d/%y")
 
 # Q2
 # Conduct a preliminary exploration and describe what you find interesting or unexpected.
+counts <- lapply(airbnb[,c(7,11,13:20, 35)], function(x) table(x))
+summaries <- lapply(airbnb[,c(6,8,22:34, 36)], function(x) summary(x))
 
 # Property types
-table(as.factor(airbnb$property_type))
-barplot(table(as.factor(airbnb$property_type)))
+barplot(counts$property_type)
 
 # Minimum nights
 summary(airbnb$minimum_nights)
+
+# Findings
+# With a 1st quartile of 100%, over 75% of listings have a 100% response rate
 
 # Q3
 # Explore comprehensively with charts, tables, and graphs
