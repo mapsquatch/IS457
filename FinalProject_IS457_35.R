@@ -7,16 +7,14 @@
 # Q1
 # 1.1: What variables have missing values? What types/forms of missing values are they?
 
-# airbnb <- read.csv("http://more.atorium.net/AirbnbSydney.csv") #broken?
+# Read in airbnb data
 airbnb <- read.csv(paste(getwd(),"/data/AirbnbSydney.csv", sep = ""), stringsAsFactors = FALSE, na.strings = c("N/A","", "NA"))
 dim(airbnb)
 class(airbnb)
 summary(airbnb)
 
-# Calculate missing values
-missingvals <- sapply(airbnb, function(x) sum(is.na(x)))
-
 # Number of missing values
+missingvals <- sapply(airbnb, function(x) sum(is.na(x)))
 missingvals[missingvals>0]
 
 # Percent missing values
@@ -34,7 +32,9 @@ airbnb$extra_people <- as.numeric(gsub("^\\$|,","",airbnb$extra_people))
 airbnb$host_response_rate <- as.numeric(gsub("%$","", airbnb$host_response_rate))
 
 # Store host_since as a date
-airbnb$host_since <- as.Date(airbnb$host_since, format = "%m/%d/%y")
+airbnb$host_since <- as.Date(airbnb$host_since, format = "%m/%d/%y") #  add column of day units for comparing ages
+# Add a column -- number of days as host as of max(date)
+airbnb$host_number_of_days <- difftime(max(airbnb$host_since), airbnb$host_since, units = "days")
 
 # Store logicals as logical. R requires a capial T or F
 airbnb$host_is_superhost <- as.logical(toupper(airbnb$host_is_superhost))
@@ -53,26 +53,70 @@ airbnb$host_identity_verified <- as.logical(toupper(airbnb$host_identity_verifie
 
 
 # 1.2: How will you deal with missing values? Justify your methods.
-# I will omit observations with missing data from analysis. Even with the higher levels of missing data (host
-# response data at 23%), I will still be left with over 8,000 observations, which is a high enough n value
-# to generate valid results.
 
 #Distribution of response_time
 table(as.factor(airbnb$host_response_time))
 # Maybe these are tied to communication rating?
 by(as.numeric(airbnb$review_scores_communication), as.factor(airbnb$host_response_time), mean)
 
-# Which obs have NA response
-airbnb[is.na(airbnb$bathrooms),]
+
 
 # 1.3: Describe how your choice method may impact later analysis.
 # The reduced n values 
 
 # 1.4: Implement methods to deal with missing values.
+# NA neighborhood_overview and house_rules
+# Do nothing, because these are descriptive text values and there is no way to impute them.
 
-# NA Bedrooms
+getmode <- function(v){
+  # funcname: getmode
+  # inputs  : a vector of elements
+  # outputs : a single-value vector containing the most-frequently occuring value
+  # purpose : Calculate the mode
+  # related : mean(), median()
+  # auth/dt : ID35, 
+  
+  uniqv <- unique(v)
+  return(uniqv[which.max(tabulate(match(v, uniqv)))])
+}
+
+# NA host_response_time
+# To preserve the integrity of these categorical data for comparative purposes,
+# I will create a new category for NA values called "unknown"
+airbnb$host_response_time[is.na(airbnb$host_response_time)] <- "unknown"
+
+# NA host_response_rate
+airbnb$host_response_rate[is.na(airbnb$host_response_rate)] <- median(airbnb$host_response_rate, na.rm = TRUE)
+
+# NA city
+airbnb$city[is.na(airbnb$city)] <- "unknown"
+
+# NA zipcode
+airbnb$zipcode[is.na(airbnb$zipcode)] <- "unknown"
+
+# NA bathrooms
+airbnb$bathrooms[is.na(airbnb$bathrooms)] <- getmode(airbnb$bathrooms)
+
+# NA bedrooms
 # Description calls this one a studio (no bedroom)
-airbnb$bedrooms[1239] <- 0
+airbnb$bedrooms[is.na(airbnb$bedrooms)] <- 0
+
+# NA cleaning fee
+
+
+# NA review scores
+# The review scores (review_scores_rating, review_scores_accuracy, 
+# review_scores_cleanliness, review_scores_checkin, and review_scores_communication)
+# are each missing one value. I will use median as the measure of centrality
+# to fill in the missing values.
+
+# These columns are being handled in the same way, and are next to each other.
+# I will use a for loop to go through each column, and assign the median value
+# of that column to any NA values.
+for(i in 28:34){
+  airbnb[is.na(airbnb[,i]),i] <- median(airbnb[,i], na.rm = TRUE)
+}
+
 
 # 1.5: After dealing with missing values, show the dimensions of the data.
 
@@ -88,14 +132,13 @@ airbnb$bedrooms[1239] <- 0
 
 # Q2
 # Conduct a preliminary exploration and describe what you find interesting or unexpected.
-counts <- lapply(airbnb[,c(7,11,13:20, 35)], function(x) table(x))
-summaries <- lapply(airbnb[,c(6,8,22:34, 36)], function(x) summary(x))
+counts <- lapply(airbnb[,c(7,11,13:20,35)], function(x) table(x))
+summaries <- lapply(airbnb[,c(6,8,22:34,36)], function(x) summary(x))
 
 # Property types
 barplot(counts$property_type)
 
-# Minimum nights
-summary(airbnb$minimum_nights)
+
 
 # Findings
 # With a 1st quartile of 100%, over 75% of listings have a 100% response rate
