@@ -102,6 +102,12 @@ airbnb$bathrooms[is.na(airbnb$bathrooms)] <- getmode(airbnb$bathrooms)
 airbnb$bedrooms[is.na(airbnb$bedrooms)] <- 0
 
 # NA cleaning fee
+# The mode is 50
+getmode(airbnb$cleaning_fee)
+# The distribution is positively skewed. This explains why the mean (94.4) is greater than the median (80)
+hist(airbnb$cleaning_fee, breaks = 1000)
+# To clean this, I will use median. It lies between the mode and the mean
+airbnb$cleaning_fee[is.na(airbnb$cleaning_fee)] <- median(airbnb$cleaning_fee, na.rm = TRUE)
 
 
 # NA review scores
@@ -119,6 +125,7 @@ for(i in 28:34){
 
 
 # 1.5: After dealing with missing values, show the dimensions of the data.
+dim(airbnb)
 
 # 1.6: Comment on and explain any other data cleaning or preparation steps you think would be 
 #      necessary from your inspection of the data (you do not have to carry them out).
