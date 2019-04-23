@@ -1,4 +1,6 @@
-
+# Load libraries
+require(ggplot2)
+#require(RColorBrewer)
 
 ###########################
 # PART 1: Data Processing #
@@ -7,11 +9,12 @@
 # Q1
 # 1.1: What variables have missing values? What types/forms of missing values are they?
 
-# Read in airbnb data
+# Initial read of the data:
+# airbnb <- read.csv(paste(getwd(),"/data/AirbnbSydney.csv", sep = ""), stringsAsFactors = FALSE)
+
+# Read in airbnb data -- accounting for NA values
 airbnb <- read.csv(paste(getwd(),"/data/AirbnbSydney.csv", sep = ""), stringsAsFactors = FALSE, na.strings = c("N/A","", "NA"))
-dim(airbnb)
-class(airbnb)
-summary(airbnb)
+
 
 # Number of missing values
 missingvals <- sapply(airbnb, function(x) sum(is.na(x)))
@@ -43,13 +46,18 @@ airbnb$host_identity_verified <- as.logical(toupper(airbnb$host_identity_verifie
 
 
 # My answer
-# Neighborhood_overview and house_rules are both text-heavy (paragraph or more) fields, NA on 6 and 15%.
-# Host_response_time and host_response_rate are both absent from 23% of the observations. Response Time is an
-# ordinal categorization of how long it takes to respond. Response Rate is a percentage (that needs cleaning if
-# it is to be used)>
+#* Neighborhood_overview and house_rules are both text-heavy (paragraph or more) fields, NA on 6 and 15%. NA values
+# are shown as empty strings: ""
+#* Host_response_time and host_response_rate are both absent from 23% of the observations. Response Time is an
+# ordinal categorization of how long it takes to respond. Response Rate is a percentage that is imported as
+# character, but will be converted to numeric. NA values are shown as valid character element "N/A".
 # City and zipcode are address components useful for aggregation. They are missing from 8 and 21 records (nearly
-# zero percent).
+# zero percent) of these character vectors.
+#* Bathrooms is a numeric with decimals (due to half bath, .5). NA values are characters "NA".
+#* Bedrooms is an integer numeric. NA values are characters "NA".
 # Cleaning_fee is a numerical (after cleaning) and missing from 6% of records.
+#* Review_scores_rating and review_scores_xxx are missing one observation in each column. These are integer values.
+# NA values are characters "NA".
 
 
 # 1.2: How will you deal with missing values? Justify your methods.
@@ -156,12 +164,27 @@ barplot(counts$property_type)
 
 # 3.2: Compare different graph types to see which ones best convey trends, outliers, and patterns
 
+# What is the distribution of the different review scores?
+boxplot(airbnb[29:34], las=1, main = "Distribution of Scores")
+
 # 3.3: Describe what you find from the graphs
 
 
 
 # Q4
 # 4.1: Compare and contrast review_per_month and number_of_reviews
+
+# A simple scatterplot; garbage-y
+#plot(airbnb$reviews_per_month, airbnb$number_of_reviews)
+
+#head(sort(airbnb$reviews_per_month, decreasing = TRUE), 100)
+top100rpm <- head(order(airbnb$reviews_per_month, decreasing = TRUE), 100)
+
+#head(sort(airbnb$number_of_reviews, decreasing = TRUE), 100)
+top100nrev <- head(order(airbnb$number_of_reviews, decreasing = TRUE), 100)
+
+# How many values in the top 100 rate (rev per mo) are in the top 100 total (num of reviews)
+table(top100rpm %in% top100nrev)
 
 # 4.2: Analyze at least three other groups as in 4.1
 
@@ -189,8 +212,12 @@ barplot(counts$property_type)
 
 # Q7
 # 7.1: Clean the price
+# Price was cleaned back in step 1 with the following:
+# airbnb$price <- as.numeric(gsub("^\\$|,","",airbnb$price))
 
 # 7.2: Add number of amenities as column
+# Amenities are separated by a comma
+
 
 # 7.3: Calculate mean review_scores_rating against cancellation policies. What do you find?
 
