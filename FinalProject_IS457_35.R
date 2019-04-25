@@ -1,5 +1,6 @@
 # Load libraries
 require(ggplot2)
+require(dplyr)
 #require(RColorBrewer)
 
 ###########################
@@ -205,22 +206,33 @@ boxplot(airbnb[29:34], las=1, main = "Distribution of Scores")
 # A simple scatterplot; garbage-y
 #plot(airbnb$reviews_per_month, airbnb$number_of_reviews)
 
-#head(sort(airbnb$reviews_per_month, decreasing = TRUE), 100)
-top100rpm <- head(order(airbnb$reviews_per_month, decreasing = TRUE), 100)
+#head(sort(airbnb$reviews_per_month, decreasing = TRUE), 100) # DELETE
+# order() pulls the row values; I can use these to subset the IDs
+top100rpm <- airbnb$id[head(order(airbnb$reviews_per_month, decreasing = TRUE), 100)]
 
 #head(sort(airbnb$number_of_reviews, decreasing = TRUE), 100)
-top100nrev <- head(order(airbnb$number_of_reviews, decreasing = TRUE), 100)
+top100nrev <- airbnb$id[head(order(airbnb$number_of_reviews, decreasing = TRUE), 100)]
 
 # How many values in the top 100 rate (rev per mo) are in the top 100 total (num of reviews)
-table(top100rpm %in% top100nrev)
+intersect(top100rpm, top100nrev)
+
+# Discussion and findings
+# PHIL
+# 22 listings are in both the top 100 review_per_month and the top 100 number_of_reviews.
 
 # 4.2: Analyze at least three other groups as in 4.1
 
+#PHIL1
+#PHIL2
+#PHIL3
 
 
 # Q5
 # Propose three different hypotheses for business analysis
 
+#PHIL1
+#PHIL2
+#PHIL3
 
 
 #########################
@@ -244,10 +256,37 @@ table(top100rpm %in% top100nrev)
 # airbnb$price <- as.numeric(gsub("^\\$|,","",airbnb$price))
 
 # 7.2: Add number of amenities as column
-# Amenities are separated by a comma
+# Amenities are separated by a comma and opened with a curly brace. Count the curly brace and commas for num of amenities
+# This statement is using lapply to make a vector 10815 elements long. gregexpr returns a list, and I need to get the 
+# length of the first element of the list
+airbnb$number_of_amenities <- sapply(airbnb$amenities, function(x) length(gregexpr("\\{|,",x)[[1]]))
+
+# I also made this using within(); not sure if it is more readable
+#airbnb <- within(airbnb, number_of_amenities2 <- sapply(amenities, function(x) length(gregexpr("\\{|,",x)[[1]])))
 
 
 # 7.3: Calculate mean review_scores_rating against cancellation policies. What do you find?
+# Using Base R
+by(airbnb$review_scores_rating, airbnb$cancellation_policy, mean)
+# Using dplyr
+airbnb %>% group_by(cancellation_policy) %>% summarise(mean = mean(review_scores_rating))
+
+# Findings
+# The super-strict cancellation policies have the worst scores -- under 90. These are less guest-friendly.
+# The highest mean was for the moderate policy, which sits between flexible and strict_14_with_grace_period
+# on the guest-friendly scale. Why wouldn't flexible -- as the most guest-friendly --  have the highest ratings? 
+# Perhaps the hosts who choose the flexible policy are more care-free and less professional in their rental?
+# It could also be statistical noise; are 95.00 and 94.15 meaningfully different?
+
+#PHIL NOT SURE
+t.test(airbnb$review_scores_rating[airbnb$cancellation_policy == "flexible"],airbnb$review_scores_rating[airbnb$cancellation_policy == "moderate"])
+
+# PHIL MORE DATA MANIP
+# DONT FORGET TO GRAB COOL AMENITY DATA; YOUTHS LOVE WIFI
+airbnb %>% group_by(property_type) %>% summarise(mean = mean(review_scores_rating))
+airbnb %>% group_by(room_type) %>% summarise(mean = mean(review_scores_rating))
+airbnb %>% group_by(bed_type) %>% summarise(mean = mean(review_scores_rating))
+airbnb %>% group_by(number_of_amenities) %>% summarise(mean = mean(review_scores_rating))
 
 
 # Q8
