@@ -1,6 +1,7 @@
 # Load libraries
-require(ggplot2)
-require(dplyr)
+library(ggplot2)
+library(dplyr)
+library(lattice)
 #require(RColorBrewer)
 
 ###########################
@@ -115,7 +116,7 @@ airbnb$bedrooms[is.na(airbnb$bedrooms)] <- 0
 getmode(airbnb$cleaning_fee)
 # The distribution is positively skewed. This explains why the mean (94.4) is greater than the median (80)
 hist(airbnb$cleaning_fee, breaks = 1000)
-# To clean this, I will use median. It lies between the mode and the mean
+# To clean this, I will use median. It lies between the mode and the mean, so I'm using the central measure of centrality. :)
 airbnb$cleaning_fee[is.na(airbnb$cleaning_fee)] <- median(airbnb$cleaning_fee, na.rm = TRUE)
 
 
@@ -214,6 +215,8 @@ top100rpm <- airbnb$id[head(order(airbnb$reviews_per_month, decreasing = TRUE), 
 top100nrev <- airbnb$id[head(order(airbnb$number_of_reviews, decreasing = TRUE), 100)]
 
 # How many values in the top 100 rate (rev per mo) are in the top 100 total (num of reviews)
+length(intersect(top100rpm, top100nrev))
+# Which IDs are in both lists?
 intersect(top100rpm, top100nrev)
 
 # Discussion and findings
@@ -243,27 +246,48 @@ intersect(top100rpm, top100nrev)
 # 6.1: Make ONE plot to visualize relationship between review_scores_rating and number of reviews
 # for all categories of property_type. Explain your findings.
 
+xyplot(airbnb$number_of_reviews ~ airbnb$review_scores_rating | airbnb$property_type, groups = airbnb$property_type, xlab = "Review Rating (20 = 1 star, 100 = 5 star)", ylab = "Number of Reviews", main="AirBnB Review Scores vs Number of Reviews (Sydney, Australia)")
+
+# Findings
+# Although certain property types are more common than others, the distributions are largely similar: it is rare for 
+# a rental to get over 100 reviews if it is not at least a four-star property (rating = 80). This is why under the 100 
+# review line, a variety of scores can be found (although still concentrated toward four- and five-star reviews). Poorly
+# reviewed rentals will see fewer guests and thus, reviews.
+
+# I'm unsure if all of these property types have been available for the same length of time. For example, hostels and boutique
+# hotels seem to have a moderate number of reviews, but none over 100. I wonder if this is a newer addition to the property types.
+
+
 # 6.2: Make ONE plot to show relationship among property types, room types, bed types, and reviews
 # per month. Explain your findings.
 
+# PHIL GOTTA FIGURE THIS OUT
+# bwplot(airbnb$reviews_per_month ~ airbnb$bed_type | airbnb$property_type)
+
 # 6.3: Make some plots to explore hypotheses in Q5. Explain your choice and describe interesting findings.
 
+# PHIL FOLLOW UP TO 5
 
 
 # Q7
 # 7.1: Clean the price
+
 # Price was cleaned back in step 1 with the following:
 # airbnb$price <- as.numeric(gsub("^\\$|,","",airbnb$price))
 
 # 7.2: Add number of amenities as column
+
 # Amenities are separated by a comma and opened with a curly brace. Count the curly brace and commas for num of amenities
 # This statement is using lapply to make a vector 10815 elements long. gregexpr returns a list, and I need to get the 
 # length of the first element of the list
 airbnb$number_of_amenities <- sapply(airbnb$amenities, function(x) length(gregexpr("\\{|,",x)[[1]]))
 
-# I also made this using within(); not sure if it is more readable
-#airbnb <- within(airbnb, number_of_amenities2 <- sapply(amenities, function(x) length(gregexpr("\\{|,",x)[[1]])))
+# Problem with the above is that it counts empty curly brace as 1
+airbnb$number_of_amenities <- sapply(airbnb$amenities, function(x) length(strsplit(x,",")[[1]]))
+# This does the same. 
 
+# Clean up the ones; using a within() statment to minimize typing airbnb$
+airbnb <- within(airbnb, number_of_amenities[number_of_amenities == 1] <- 0)
 
 # 7.3: Calculate mean review_scores_rating against cancellation policies. What do you find?
 # Using Base R
@@ -282,6 +306,7 @@ airbnb %>% group_by(cancellation_policy) %>% summarise(mean = mean(review_scores
 t.test(airbnb$review_scores_rating[airbnb$cancellation_policy == "flexible"],airbnb$review_scores_rating[airbnb$cancellation_policy == "moderate"])
 
 # PHIL MORE DATA MANIP
+# DPLYR
 # DONT FORGET TO GRAB COOL AMENITY DATA; YOUTHS LOVE WIFI
 airbnb %>% group_by(property_type) %>% summarise(mean = mean(review_scores_rating))
 airbnb %>% group_by(room_type) %>% summarise(mean = mean(review_scores_rating))
@@ -293,6 +318,7 @@ airbnb %>% group_by(number_of_amenities) %>% summarise(mean = mean(review_scores
 # Linear Modeling
 
 
+
 ############################
 # PART 3: Further Analysis #
 ############################
@@ -302,15 +328,77 @@ airbnb %>% group_by(number_of_amenities) %>% summarise(mean = mean(review_scores
 # 9.1: Explore relationships (if any) between superhost and host_since, host_response_time, host_response_rate.
 # host_verifications, host_identity_verified
 
+# PHIL Q9 is FUCKED
+plot(lm(airbnb$host_is_superhost ~ airbnb$host_since))
+
+
 # 9.2: Create mosaic plot for host_response_time by superhost. What do you learn?
 
+mtab <- table(airbnb$host_is_superhost, airbnb$host_response_time)
+mosaicplot(table(airbnb$host_is_superhost, airbnb$host_response_time), sort=c(c(0,1),c(5,4,3,1,2)))
+
+library("ggmosaic")
+ggplot(data = airbnb) +
+  geom_mosaic(aes(x = product(as.factor(airbnb$host_response_time), as.factor(airbnb$host_is_superhost)), fill=as.factor(airbnb$host_response_rate)), na.rm=TRUE) +
+  labs(x="Is Superhost", y="Cut", title="Diamond Cut vs Clarity") 
 
 
 # Q10
 # 10.1: Extract unique words in description and eliminate stop words. Store in dataframe and sort decreasing.
 # What do you infer from words with top 10 frequency?
 
-# 10.2: Explore whether beach affects price of a listing. Explore multiple high frequency words.
+# Get all "words", splitting on space
+#all_words <- unlist(strsplit(airbnb[1:3,2], "[[:space:]]"))
+# Extract only alpha letters
+#regmatches(all_words, regexpr("[[:alpha:]]+", all_words))
+#grep("[[:alpha:]]",unlist(strsplit(airbnb[1:3,2], "[[:space:]]|,|.")), value = TRUE)
+#unlist(grep("[[:alpha:]]", airbnb[1:3,2], value=TRUE))
+
+# After wrangling with "what is a word" and handling punctuation, I've decided to leverage libraries built to deal with this
+# https://www.tidytextmining.com/tidytext.html
+
+#install.packages("tidytext")
+library(tidytext)
+
+# Load the stop words (to be omitted from analysis) into a tidytext-compatible data frame
+#is457_stop_words <- c("a", "able", "about", "across", "after", "all", "almost", "also", "among", "and", "are", "almost", "at", "almost", "also", "am", "among", "an", "and", "any", "are", "as", "at", "be", "because", "been", "but", "by", "can", "cannot", "could", "dear", "did", "do", "does", "either", "else", "ever", "every", "for", "from", "get", "got", "had", "has", "have", "he", "her", "hers", "him", "his", "how", "however", "i", "if", "in", "into", "is", "it", "its", "just", "least", "let", "like", "likely", "may", "me", "might", "most", "must", "my", "neither", "no", "nor", "not", "of", "off", "often", "on", "only", "or", "other", "our", "own", "rather", "said", "say", "says", "she", "should", "since", "so", "some", "than", "that", "the", "their", "them", "then", "there", "these", "they", "this", "is", "to", "too", "was", "us", "wants", "was", "we", "were", "what", "when", "where", "which", "while", "who", "whom", "why", "will", "with", "would", "yet", "you", "your")
+is457_stop_words_df <- data.frame(lexicon = "is457", word = c("a", "able", "about", "across", "after", "all", "almost", "also", "among", "and", "are", "almost", "at", "almost", "also", "am", "among", "an", "and", "any", "are", "as", "at", "be", "because", "been", "but", "by", "can", "cannot", "could", "dear", "did", "do", "does", "either", "else", "ever", "every", "for", "from", "get", "got", "had", "has", "have", "he", "her", "hers", "him", "his", "how", "however", "i", "if", "in", "into", "is", "it", "its", "just", "least", "let", "like", "likely", "may", "me", "might", "most", "must", "my", "neither", "no", "nor", "not", "of", "off", "often", "on", "only", "or", "other", "our", "own", "rather", "said", "say", "says", "she", "should", "since", "so", "some", "than", "that", "the", "their", "them", "then", "there", "these", "they", "this", "is", "to", "too", "was", "us", "wants", "was", "we", "were", "what", "when", "where", "which", "while", "who", "whom", "why", "will", "with", "would", "yet", "you", "your"))
+
+# Subset ID and Description
+text_df <- airbnb[,1:2]
+
+# Unnest_tokens does some heavy-lifting: it splits out each word, converts to lowercase
+tidy_txt <- text_df %>% unnest_tokens(word, description)
+
+# Remove ("anti-join") the stop words for this class (tidytext comes with its own dictionaries of stop words)
+tidy_txt <- tidy_txt %>% anti_join(is457_stop_words_df)
+
+# Count'em and keep the top 10
+tidy_txt %>% count(word, sort = TRUE) %>% head(10)
+
+# 10.2: Explore whether beach affects price of a listing. What is the difference in average price?
+#       Explore multiple high frequency words. Write a function to get word frequency by row.
+
+count_word_in_desc <- function(w, v){
+  # funcname: count_word_in_desc
+  # inputs  : A word (character string) to search for, a vector to search in
+  # outputs : count of words (integer)
+  # purpose : Count words
+  # related : N/A
+  # auth/dt : ID35, 2019-04-25
+  
+  w <- tolower(w)
+  v <- tolower(v)
+  
+  if(attr(gregexpr(w,v)[[1]], "match.length")[1] == -1){
+    return(0)
+  }
+  else{
+    return(length(attr(gregexpr(w,v)[[1]], "match.length")))
+  }
+}
+
+count_word_in_desc("please",airbnb[1,2])
 
 # 10.3: Select at least 3 other words from your dataframe and do similar analysis. What conclusions do you find?
 
