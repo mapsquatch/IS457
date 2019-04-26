@@ -376,14 +376,48 @@ tidy_txt <- tidy_txt %>% anti_join(is457_stop_words_df)
 # Count'em and keep the top 10
 tidy_txt %>% count(word, sort = TRUE) %>% head(10)
 
-# 10.2: Explore whether beach affects price of a listing. What is the difference in average price?
-#       Explore multiple high frequency words. Write a function to get word frequency by row.
+# 10.2a: Explore whether beach affects price of a listing. What is the difference in average price?
+
+# Get "beach" and "beaches" listing IDs
+has_beach <- tidy_txt$id[tidy_txt$word == "beach"]
+has_beaches <- tidy_txt$id[tidy_txt$word == "beaches"]
+
+# These vectors have every mention of the word
+paste(length(has_beach),"mentions of beach, and",length(has_beaches),"mentions of beaches.")
+# Show unique listings with these words
+paste(length(unique(has_beach)),"listings have beach, and",length(unique(has_beaches)),"listings have beaches.")
+
+# union() removes duplicates
+beachy <- union(has_beach, has_beaches)
+paste(length(beachy),"listings in total mention beach or beaches.")
+
+# How do beach listings prices compare to non-beach?
+# Convert beachy vector to a data frame to merge into airbnb as a logical column
+beachy <- data.frame(id = beachy, beach_desc = TRUE)
+
+airbnb <- merge(airbnb, beachy, all.x = TRUE, by="id")
+airbnb$beach_desc[is.na(airbnb$beach_desc)] <- FALSE
+
+# I still have 4655 listings with beach, now as a logical column in airbnb
+table(airbnb$beach_desc)
+
+mean(airbnb$price)
+by(airbnb$price, airbnb$beach_desc, mean)
+airbnb %>% group_by(beach_desc) %>% summarise(mean(price))
+
+# Findings
+# The average price for all listings is $203.16. Listings that mention "beach" or "beaches" average price is 
+# $236.91 ($33.75 above average). Listings without those words average $177.25 ($25.51 below average).
+# Compared to each other, a beach listing is priced 33% higher.
+
+
+# 10.2b: Explore multiple high frequency words. Write a function to get word frequency by row.
 
 count_word_in_desc <- function(w, v){
   # funcname: count_word_in_desc
   # inputs  : A word (character string) to search for, a vector to search in
   # outputs : count of words (integer)
-  # purpose : Count words
+  # purpose : Count appearances of a string
   # related : N/A
   # auth/dt : ID35, 2019-04-25
   
@@ -398,10 +432,39 @@ count_word_in_desc <- function(w, v){
   }
 }
 
-count_word_in_desc("please",airbnb[1,2])
+# Now to find some top words! I dug a little
+# Beach, just for comparison to the tidytext. This one finds 4,694 beach listings, but the results are similar.
+airbnb$wc_beach <- unlist(lapply(airbnb$description, function(x) count_word_in_desc("beach",x)))
+airbnb %>% group_by(wc_beach>0) %>% summarise(n = n(), avg_price = mean(price), avg_review = mean(review_scores_rating))
+
+# What listings are different?
+diffs <- airbnb$description[airbnb$beach_desc == FALSE & airbnb$wc_beach > 0]
+# beachfront, beachside, beachy, beachvolleyball for a few examples
 
 # 10.3: Select at least 3 other words from your dataframe and do similar analysis. What conclusions do you find?
 
+airbnb$wc_kitchen <- unlist(lapply(airbnb$description, function(x) count_word_in_desc("kitchen",x)))
+airbnb$wc_restaurants <- unlist(lapply(airbnb$description, function(x) count_word_in_desc("restaurants",x)))
+airbnb$wc_bus <- unlist(lapply(airbnb$description, function(x) count_word_in_desc("bus",x)))
+airbnb$wc_walk <- unlist(lapply(airbnb$description, function(x) count_word_in_desc("walk",x)))
+airbnb$wc_balcony <- unlist(lapply(airbnb$description, function(x) count_word_in_desc("balcony",x)))
+
+#airbnb$wc_kitchen[airbnb$wc_kitchen > 0]
+airbnb %>% group_by(wc_kitchen>0) %>% summarise(n = n(), avg_price = mean(price), avg_review = mean(review_scores_rating))
+airbnb %>% group_by(wc_restaurants>0) %>% summarise(n = n(), avg_price = mean(price), avg_review = mean(review_scores_rating))
+airbnb %>% group_by(wc_bus>0) %>% summarise(n = n(), avg_price = mean(price), avg_review = mean(review_scores_rating))
+airbnb %>% group_by(wc_walk>0) %>% summarise(n = n(), avg_price = mean(price), avg_review = mean(review_scores_rating))
+airbnb %>% group_by(wc_balcony>0) %>% summarise(n = n(), avg_price = mean(price), avg_review = mean(review_scores_rating))
+
+# Findings
+
+# Scanning the top words, I looked for words that indicated something possibly unique about a listing (e.g. kitchen) versus
+# something more routine (e.g., bed). I focused on a few areas: food (kitchen vs restaurants), transportation (bus vs walking),
+# and the balcony (just curious about it more than anything).
+
+# What I found is that these words had a small effect on the average review (the largest spread was 0.4, or just under
+# a quarter-star difference: "walk" and "restaurants" both scored higher than their non-walk and non-restaurant counterparts).
+# PHIL yammer on
 
 # Q10(2)
 # Q10(2).1 LOOK IT UP
