@@ -152,7 +152,7 @@ dim(airbnb)
 
 # This will create two lists: counts (table()) for categorical data, and summaries for continuous data
 # This allows me to visually inspect the numerical distribution of each variable (using View())
-col_categories <- c(7,11:20,35)
+col_categories <- c(7,9,11:20,35)
 col_continuous <- c(6,8,22:34,36)
 
 counts <- lapply(airbnb[,col_categories], function(x) table(x))
@@ -161,6 +161,7 @@ summaries <- lapply(airbnb[,col_continuous], function(x) summary(x))
 counts
 
 # host_response_time: Most hosts respond quickly (within an hour), although the imputed unknown category makes up the second-largest percentage.
+# host_is_superhost: 2795 of the 10,815 are superhosts.
 # host_identity_verified: just under half of listing have a verified host. This even number could make for good comparisons if splitting the data.
 # city: What a mess! Invalid charactersets, inconsistent naming and upper/lower casing of city names (see: Bondi Beach, bondi beach, Bondi beach, "Bondi Beach, Sydney"). I will ignore if possible.
 # zipcode: The distribution is uneven, and I don't know anything about the districts themselves. However, it's the cleanest geographic data available.
@@ -210,13 +211,17 @@ for(i in names(airbnb[col_categories])){
     geom_histogram(stat="count")
 }
 
-lapply(airbnb[col_categories], function(thiscol)
+lapply(airbnb[col_categories], function(thiscol){
+  print(names(thiscol))
          ggplot(data = airbnb, aes(x = thiscol)) +
          geom_histogram(stat="count")+
-         ggtitle(names(thiscol)))
+         ggtitle(names(thiscol))}
+)
 
 ggplot(data = airbnb, aes(x = host_identity_verified)) +
-  geom_histogram(stat="count")
+  geom_histogram(stat="count") +
+  xlab("Host Since") +
+  ylab("Percent of Data (n = 10,815)")
 
 
 # 3.2: Compare different graph types to see which ones best convey trends, outliers, and patterns
@@ -290,8 +295,36 @@ xyplot(airbnb$number_of_reviews ~ airbnb$review_scores_rating | airbnb$property_
 # 6.2: Make ONE plot to show relationship among property types, room types, bed types, and reviews
 # per month. Explain your findings.
 
-# PHIL GOTTA FIGURE THIS OUT
-# bwplot(airbnb$reviews_per_month ~ airbnb$bed_type | airbnb$property_type)
+# Get a target row count (10,546)
+sum(head(sort(table(airbnb$property_type), decreasing = TRUE), 10))
+
+# Subset the data frame to top property types
+# Get a vector of property types
+i <- names(head(sort(table(airbnb$property_type), decreasing = TRUE), 10))
+# Subset
+prairbnb <- airbnb[airbnb$property_type %in% i,]
+# A double check
+table(prairbnb$property_type)
+
+# For best results, view on an 80" plasma 4k TV
+bwplot(prairbnb$reviews_per_month ~ prairbnb$property_type | prairbnb$bed_type + prairbnb$room_type,
+       scales=list(x=list(rot=90, cex=0.5)),
+       xlab='Bed Type', ylab='Reviews Per Month',
+       par.strip.text=list(cex=.55),
+       cex = .5,
+       main = "Reviews Per Month by Property, Room, and Bed Types")
+
+
+# Findings
+
+# This layout is a grid of plots: each row contains one of three room types, and each column contains one of five bedtypes.
+# The property types are shown in the boxplot inside each grid cell. This layout shows that "real bed" is the most common
+# bed type (due to the visual density of the boxplots). Real beds are also found at the most popular listings: all listings
+# with over 10 reviews per month have a real bed. Futons, couches, and airbeds are not common, and the listings that 
+# have them do not have more than five reviews per month. The pull-out sofa is the second-most popular bed type, and it
+# has a couple listings that break the five review per month level. In the Real Bed > Entire Home and Private Room graphs,
+# the large amount of outliers above the whiskers indicate a positively-skewed distribution.
+
 
 # 6.3: Make some plots to explore hypotheses in Q5. Explain your choice and describe interesting findings.
 
@@ -496,11 +529,22 @@ airbnb %>% group_by(wc_balcony>0) %>% summarise(n = n(), avg_price = mean(price)
 # PHIL yammer on
 
 # Q10(2)
-# Q10(2).1 LOOK IT UP
+# Q10(2).1 Choose between zip code or city. Justify. Calculate number of listings for each in category. Filter to top 100.
+# Explore whether top 100 have higher weighted ratings. Graph and explain your findings.
+
+# The city data is very messy, with case and formatting issues. I'm going to use zip code data.
+
+# Grab the top 100, but exclude the "unknown" that I imputed earlier.
+#head(sort(table(airbnb$zipcode[airbnb$zipcode != "unknown"]), decreasing = TRUE), 100)
+
+# I have just been learning the dplyr tools with this project, and I find this much more readable:
+airbnb %>% select(zipcode) %>% filter(zipcode != "unknown") %>% table() %>% sort(decreasing = TRUE) %>% head(100)
+
+# PHIL
 
 # Q10(2).2: Choose two other aspects from description that may improve the weighted mean of review_scores_rating
 
-
+# PHIL
 
 #####################
 # PART 4: Your Turn #
