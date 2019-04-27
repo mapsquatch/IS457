@@ -38,8 +38,11 @@ airbnb$host_response_rate <- as.numeric(gsub("%$","", airbnb$host_response_rate)
 
 # Store host_since as a date
 airbnb$host_since <- as.Date(airbnb$host_since, format = "%m/%d/%y") #  add column of day units for comparing ages
+
 # Add a column -- number of days as host as of max(date)
-airbnb$host_number_of_days <- difftime(max(airbnb$host_since), airbnb$host_since, units = "days")
+# airbnb$host_number_of_days <- difftime(max(airbnb$host_since), airbnb$host_since, units = "days")
+# CANCELLED: THIS IS FOR THE HOST, NOT THE PROPERTY
+
 
 # Store logicals as logical. R requires a capial T or F
 airbnb$host_is_superhost <- as.logical(toupper(airbnb$host_is_superhost))
@@ -197,7 +200,7 @@ summaries
 
 # PHIL
 
-# Date / Growth Over Time
+# Date / Host Growth Over Time
 ggplot(data = airbnb, aes(x = host_since)) +
   stat_ecdf(geom = "step") +
   ggtitle("AirBnB Growth Over Time (Sydney, Australia)") +
@@ -238,8 +241,40 @@ boxplot(airbnb[29:34], las=1, main = "Distribution of Scores")
 # Q4
 # 4.1: Compare and contrast review_per_month and number_of_reviews
 
-# A simple scatterplot; garbage-y
-#plot(airbnb$reviews_per_month, airbnb$number_of_reviews)
+# So my general theory is that number of reviews is partly a function of time (listings that have been around longer
+# have more opportunities to be reviewed). So I want to explore what happens if we normalize the number of reviews
+# by the number of months the listing has existed. I thought I could use host_since, but this is about the *host* and
+# not the *property*.
+
+# Errors of my ways: some host_ids have multiple listings
+airbnb %>% select(host_id) %>% table() %>% sort(decreasing = TRUE) %>% head(15)
+# Affirm that host_since is the same for all listings, using one of the top host_ids
+airbnb %>% select(host_id, host_since) %>% filter(host_id == '2450066') %>% head(20)
+# YUP.
+
+# Find rates
+airbnb <- airbnb %>% mutate(months_listed = number_of_reviews / reviews_per_month)
+max(airbnb$months_listed) # 102 months max; 102.1 * 5 = 510.5. Use this in the red line.
+
+# Now I have calculated the number of months a listing has been available, but it is calculated using
+# the two variables, so this data (months_listed) is literally a function of the two. Let's just plot them 
+# and have a look.
+
+# A simple scatterplot of the two variables
+ggplot(airbnb, aes(reviews_per_month, number_of_reviews)) +
+  ggtitle("Reviews Per Month vs Number of Reviews") +
+  geom_segment(aes(x = 0,xend = 5, y = 0, yend = 510.5), size = 1.5, color = "red") +
+  geom_segment(aes(x = 0,xend = 16, y = 0, yend = 16), size = 1.5, color = "blue") +
+  geom_point() +
+  xlab("Reviews Per Month") +
+  ylab("Number of Reviews")
+
+# This graph shows a scatterplot of the two variables against each other. The blue line represents the
+# max rate (1:1, that is, 30 reviews in one month). So a point near the blue line is receiving reviews as
+# frequently as possible. The red line represents the minimum number of reviews a property could receive, for
+# the given reviews per month and the maximum age of a listing in this dataset (102.1 months).
+
+# Now let's look at overlap between the top 100 of each variable
 
 #head(sort(airbnb$reviews_per_month, decreasing = TRUE), 100) # DELETE
 # order() pulls the row values; I can use these to subset the IDs
@@ -253,9 +288,23 @@ length(intersect(top100rpm, top100nrev))
 # Which IDs are in both lists?
 intersect(top100rpm, top100nrev)
 
+ggplot(airbnb, aes(reviews_per_month, number_of_reviews)) +
+  ggtitle("Listings in Top 100 Reviews Per Month and Number of Reviews") +
+  geom_segment(aes(x = 0,xend = 5, y = 0, yend = 510.5), size = 1.5, color = "red") +
+  geom_segment(aes(x = 0,xend = 16, y = 0, yend = 16), size = 1.5, color = "blue") +
+  geom_vline(xintercept = min(airbnb$reviews_per_month[airbnb$id %in% top100rpm])) +
+  geom_hline(yintercept = min(airbnb$number_of_reviews[airbnb$id %in% top100nrev])) +
+  geom_point(color = "grey") +
+  geom_point(data = airbnb[airbnb$id %in% intersect(top100rpm, top100nrev),], size = 3) +
+  xlab("Reviews Per Month") +
+  ylab("Number of Reviews")
+
+
 # Discussion and findings
 # PHIL
 # 22 listings are in both the top 100 review_per_month and the top 100 number_of_reviews.
+# I have added reference lines to the graph illustrating the minimum value in the top 100
+# of each variable, then highlighted the values in the top 100 of each (the upper right quadrant).
 
 # 4.2: Analyze at least three other groups as in 4.1
 
