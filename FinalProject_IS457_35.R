@@ -137,7 +137,7 @@ for(i in 28:34){
 
 # 1.5: After dealing with missing values, show the dimensions of the data.
 
-# Show dimensions; I added a column for days listed
+# Show dimensions
 dim(airbnb)
 
 # 1.6: Comment on and explain any other data cleaning or preparation steps you think would be 
@@ -301,10 +301,22 @@ ggplot(airbnb, aes(reviews_per_month, number_of_reviews)) +
 
 
 # Discussion and findings
-# PHIL
+# These two variables (number of reviews and reviews per month) both describe the populariy of a listing,
+# but in different ways. Number of reviews is the total number of reviews. Properties with a high value here will
+# have had the most guests visit. However, this metric is influenced by the length of time it has been around.
+# Reviews per month attempts to account for the time a listing has been offered by normalizing the data against the
+# number of months is has been available (and earlier I back-calculated the number of months). New listings with a 
+# strong opening can lead this metric. One potential drawback to the reviews_per_month variable is that it penalizes
+# listings with higher minimum night stays. Listings with a seven-night minimum would have a four review_per_month
+# ceiling.
 # 22 listings are in both the top 100 review_per_month and the top 100 number_of_reviews.
 # I have added reference lines to the graph illustrating the minimum value in the top 100
 # of each variable, then highlighted the values in the top 100 of each (the upper right quadrant).
+# The upper-right quadrant is the **best of the best** -- popular for a long time and frequently reviewed. The
+# upper-left quadrant contains **established favorites**. These properties have a lower review frequency, but they
+# have been around long enough to achieve high review counts. The lower-right quadrant contains the **best new listings**.
+# These listings have low counts, but are being reviewed frequently enough that it's expected they will work their way 
+# into the higher property counts. The lower-left quadrant contains **typical listings**.
 
 # 4.2: Analyze at least three other groups as in 4.1
 
@@ -427,6 +439,7 @@ airbnb %>% group_by(number_of_amenities) %>% summarise(mean = mean(review_scores
 
 # Q8
 # Linear Modeling
+# Explain 10 variables; evaluate one
 
 
 
