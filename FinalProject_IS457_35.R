@@ -64,17 +64,15 @@ airbnb$host_identity_verified <- as.logical(toupper(airbnb$host_identity_verifie
 
 # 1.2: How will you deal with missing values? Justify your methods.
 
-#Distribution of response_time
-table(as.factor(airbnb$host_response_time))
-# Maybe these are tied to communication rating?
-by(as.numeric(airbnb$review_scores_communication), as.factor(airbnb$host_response_time), mean)
-
+# PHIL
 
 
 # 1.3: Describe how your choice method may impact later analysis.
-# The reduced n values 
+
+# PHIL
 
 # 1.4: Implement methods to deal with missing values.
+
 # NA neighborhood_overview and house_rules
 # Do nothing, because these are descriptive text values and there is no way to impute them.
 
@@ -154,14 +152,18 @@ dim(airbnb)
 
 # This will create two lists: counts (table()) for categorical data, and summaries for continuous data
 # This allows me to visually inspect the numerical distribution of each variable (using View())
-counts <- lapply(airbnb[,c(7,11,13:20,35)], function(x) table(x))
-summaries <- lapply(airbnb[,c(6,8,22:34,36)], function(x) summary(x))
+col_categories <- c(7,11:20,35)
+col_continuous <- c(6,8,22:34,36)
+
+counts <- lapply(airbnb[,col_categories], function(x) table(x))
+summaries <- lapply(airbnb[,col_continuous], function(x) summary(x))
 
 counts
 
 # host_response_time: Most hosts respond quickly (within an hour), although the imputed unknown category makes up the second-largest percentage.
 # host_identity_verified: just under half of listing have a verified host. This even number could make for good comparisons if splitting the data.
-# zipcode: I don't plan to do much with zipcode. The distribution is uneven, and I don't know anything about the districts themselves.
+# city: What a mess! Invalid charactersets, inconsistent naming and upper/lower casing of city names (see: Bondi Beach, bondi beach, Bondi beach, "Bondi Beach, Sydney"). I will ignore if possible.
+# zipcode: The distribution is uneven, and I don't know anything about the districts themselves. However, it's the cleanest geographic data available.
 # property_type: Mostly Apartment (~58%) and House (~24%), although 31 property types total.
 # room_type: Three categories. Predominantly Entire home/apt, 26% Private room, and only 84 in a Shared room.
 # accommodates: Mostly 2, 4, 6, 3, 1, 5, then 8, 7, 10, and up to 16. Even numbers are more common.
@@ -192,14 +194,41 @@ summaries
 # Explore comprehensively with charts, tables, and graphs
 # 3.1: Think about types of variables; choose appropriate graphs to find distributions and trends
 
+# PHIL
+
+# Date / Growth Over Time
+ggplot(data = airbnb, aes(x = host_since)) +
+  stat_ecdf(geom = "step") +
+  ggtitle("AirBnB Growth Over Time (Sydney, Australia)") +
+  xlab("Host Since") +
+  ylab("Percent of Data (n = 10,815)")
+
+# Categorical Graphs
+for(i in names(airbnb[col_categories])){
+  print(i)
+  ggplot(data = airbnb, aes(x = i)) +
+    geom_histogram(stat="count")
+}
+
+lapply(airbnb[col_categories], function(thiscol)
+         ggplot(data = airbnb, aes(x = thiscol)) +
+         geom_histogram(stat="count")+
+         ggtitle(names(thiscol)))
+
+ggplot(data = airbnb, aes(x = host_identity_verified)) +
+  geom_histogram(stat="count")
+
+
 # 3.2: Compare different graph types to see which ones best convey trends, outliers, and patterns
 
 # What is the distribution of the different review scores?
 boxplot(airbnb[29:34], las=1, main = "Distribution of Scores")
 
+# PHIL
+
 # 3.3: Describe what you find from the graphs
 
-
+# PHIL
 
 # Q4
 # 4.1: Compare and contrast review_per_month and number_of_reviews
