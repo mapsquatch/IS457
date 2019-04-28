@@ -27,3 +27,19 @@ use plot with apply family!
 GIS Notes
 Shapefile from
 http://www.abs.gov.au/AUSSTATS/abs@.nsf/DetailsPage/1270.0.55.003July%202016?OpenDocument
+
+LOOP GRAPHS
+for(i in c(7,9,11:20,35)){
+  #print(i)
+  ggplot(data = airbnb[i], aes()) +
+    geom_histogram(stat="count")
+}
+
+lapply(airbnb[c(7,9,11,14:20,35)], function(thiscol){
+  v <- (names(thiscol))
+  print(v)
+  ggplot(data = airbnb, aes(x = thiscol)) +
+    geom_histogram(stat="count") +
+    ggtitle(v)
+    }
+)

@@ -218,88 +218,86 @@ ggplot(data = airbnb, aes(x = host_since)) +
 
 ggplot(data = airbnb, aes(x = host_response_time)) +
   geom_histogram(stat="count") +
-  ggtitle("Categorical Counts")
+  ggtitle("Categorical Counts: Host Response Time")
 
 ggplot(data = airbnb, aes(x = host_is_superhost)) +
   geom_histogram(stat="count") +
-  ggtitle("Categorical Counts")
+  ggtitle("Categorical Counts: Host is Superhost")
 
 ggplot(data = airbnb, aes(x = host_identity_verified)) +
   geom_histogram(stat="count") +
-  ggtitle("Categorical Counts")
+  ggtitle("Categorical Counts: Host Identity Verified")
 
 ggplot(data = airbnb, aes(x = property_type)) +
   geom_histogram(stat="count") +
-  ggtitle("Categorical Counts") +
+  ggtitle("Categorical Counts: Property Type") +
   theme(axis.text.x = element_text(angle = 90))
 
 ggplot(data = airbnb, aes(x = room_type)) +
   geom_histogram(stat="count") +
-  ggtitle("Categorical Counts")
+  ggtitle("Categorical Counts: Room Type")
 
 ggplot(data = airbnb, aes(x = bed_type)) +
   geom_histogram(stat="count") +
-  ggtitle("Categorical Counts")
+  ggtitle("Categorical Counts: Bed Type")
 
 ggplot(data = airbnb, aes(x = cancellation_policy)) +
   geom_histogram(stat="count") +
-  ggtitle("Categorical Counts")
+  ggtitle("Categorical Counts: Cancellation Policy")
 
 # Continuous Data Graphs
 
 ggplot(data = airbnb, aes(x = host_response_rate)) +
   geom_density() +
-  ggtitle("Continuous Data")
+  ggtitle("Continuous Data: Host Response Rate")
 
 ggplot(data = airbnb, aes(x = accommodates)) +
   geom_histogram(stat="count") +
-  ggtitle("Continuous Data")
+  ggtitle("Continuous Data: Accommodates")
 
 ggplot(data = airbnb, aes(x = bathrooms)) +
   geom_histogram(stat="count") +
-  ggtitle("Continuous Data")
+  ggtitle("Continuous Data: # Bathrooms")
 
 ggplot(data = airbnb, aes(x = bedrooms)) +
   geom_histogram(stat="count") +
-  ggtitle("Continuous Data")
+  ggtitle("Continuous Data: # Bedrooms")
 
 ggplot(data = airbnb, aes(x = beds)) +
   geom_histogram(stat="count") +
-  ggtitle("Continuous Data")
+  ggtitle("Continuous Data: # Beds")
 
 ggplot(data = airbnb, aes(x = price)) +
   geom_density() +
-  ggtitle("Continuous Data")
+  ggtitle("Continuous Data: Price")
 
 ggplot(data = airbnb, aes(x = cleaning_fee)) +
   geom_density() +
-  ggtitle("Continuous Data")
+  ggtitle("Continuous Data: Cleaning Fee")
 
 ggplot(data = airbnb, aes(x = guests_included)) +
   geom_histogram(stat="count") +
-  ggtitle("Continuous Data")
+  ggtitle("Continuous Data: Guests Included")
 
 ggplot(data = airbnb, aes(x = extra_people)) +
   geom_histogram(stat="count") +
-  ggtitle("Continuous Data")
+  ggtitle("Continuous Data: Extra People")
 
 ggplot(data = airbnb, aes(x = minimum_nights)) +
   geom_histogram(stat="count") +
-  ggtitle("Continuous Data")
+  ggtitle("Continuous Data: Mininum Nights per Stay")
 
 ggplot(data = airbnb, aes(x = number_of_reviews)) +
   geom_density() +
-  ggtitle("Continuous Data")
+  ggtitle("Continuous Data: Number of Reviews")
 
 ggplot(data = airbnb, aes(x = review_scores_rating)) +
   geom_density() +
-  ggtitle("Continuous Data")
+  ggtitle("Continuous Data: Review Scores Rating")
 
 # What is the distribution of the different review scores?
 boxplot(airbnb[29:34], las=1, main = "Distribution of Scores")
 
-ggplot(airbnb, aes()) +
-  geom_boxplot()
 
 # 3.2: Compare different graph types to see which ones best convey trends, outliers, and patterns
 
@@ -308,6 +306,8 @@ ggplot(airbnb, aes()) +
 
 # For continuous data, histograms worked well for variables with fewer counts, and density plots worked better for 
 # variables with a wider spread of values.
+
+# For variables with similar value scale, a boxplot does a good job of showing distribution statistics in a side-by-side fashion.
 
 # PHIL
 
@@ -441,9 +441,17 @@ ggplot(data = airbnb, aes(x = cleaning_fee_pct * 100)) +
 # Because I determined reviews_per_month was a good indicator of popularity, I thought I would
 # graph some other variables against it in a scatterplot and see if any patterns arise.
 
-ggplot(data = airbnb, aes(reviews_per_month, cleaning_fee)) +
-  geom_point()
+ggplot(data = airbnb, aes(cleaning_fee, reviews_per_month)) +
+  geom_point() +
+  geom_smooth(method = "lm", se=FALSE) +
+  ggtitle("Reviews Per Month by Cleaning Fee") +
+  xlab("Cleaning Fee") +
+  ylab("Reviews Per Month")
 
+
+
+# Findings
+# PHIL EXPLAIN
 
 # Q5
 # Propose three different hypotheses for business analysis
@@ -610,19 +618,40 @@ plot(amodel)
 # host_verifications, host_identity_verified
 
 # PHIL Q9 is FUCKED
-plot(lm(airbnb$host_is_superhost ~ airbnb$host_since))
-
+# Make host_verifications useful
+mair <- airbnb %>% select(c("id", "host_response_time", "host_response_rate", "host_verifications", "price")) %>% melt(id=c("id", "price"))
+ggplot(mair, aes(x=factor(variable), y=price)) + 
+  geom_boxplot(aes(fill = value))+
+  ggtitle("Amenity Influence in < $500 AirBnB") +
+  xlab("Amenity") +
+  ylab("Price Per Night")
+ggplot(data = airbnb, aes(host_is_superhost, reviews_per_month)) +
+  geom_boxplot() +
+  ggtitle("Reviews Per Month by Price") +
+  xlab("Is Superhost") +
+  ylab("Reviews Per Month")
 
 # 9.2: Create mosaic plot for host_response_time by superhost. What do you learn?
 
-mtab <- table(airbnb$host_is_superhost, airbnb$host_response_time)
-mosaicplot(table(airbnb$host_is_superhost, airbnb$host_response_time), sort=c(c(0,1),c(5,4,3,1,2)))
-
 library("ggmosaic")
 ggplot(data = airbnb) +
-  geom_mosaic(aes(x = product(as.factor(airbnb$host_response_time), as.factor(airbnb$host_is_superhost)), fill=as.factor(airbnb$host_response_rate)), na.rm=TRUE) +
-  labs(x="Is Superhost", y="Cut", title="Diamond Cut vs Clarity") 
+  geom_mosaic(aes(product(host_response_time, host_is_superhost), fill=host_response_time), na.rm=TRUE) +
+  labs(x="Is Superhost", y="Response Times", title="Superhost Response Times") 
 
+# Findings
+
+# A mosaic plot shows percentages of observations across categorical variables.  Here we can see the distribution
+# of host_is_superhost along the x-axis: Superhosts (TRUE) make up less than a third of the total observations
+# (because the FALSE column is more than twice as wide as TRUE). However, we can see the response time distribution along the
+# y-axis, and the data show that over half of Superhosts respond within an hour. This graph includes some imputed data
+# from the cleanup phase. The "unknown" response doesn't necessarily help us in comparing these two groups (although it
+# does describe the condition of our data). If we want, we can remove "unknown" to compare known response times:
+
+ggplot(data = airbnb %>% filter(host_response_time != "unknown")) +
+  geom_mosaic(aes(product(host_response_time, host_is_superhost), fill=host_response_time), na.rm=TRUE) +
+  labs(x="Is Superhost", y="Response Times", title="Superhost Response Times", subtitle = "Known response times") 
+
+# Here we can see that, based on known response times, Superhosts respond more quickly than non-Superhosts.
 
 # Q10
 # 10.1: Extract unique words in description and eliminate stop words. Store in dataframe and sort decreasing.
@@ -685,6 +714,8 @@ table(airbnb$beach_desc)
 mean(airbnb$price)
 by(airbnb$price, airbnb$beach_desc, mean)
 airbnb %>% group_by(beach_desc) %>% summarise(mean(price))
+
+# PHIL add a table
 
 # Findings
 # The average price for all listings is $203.16. Listings that mention "beach" or "beaches" average price is 
@@ -768,10 +799,16 @@ airbnb %>% filter(!(zipcode %in% zip100)) %>% count()
 
 # PHIL: 
 # This makes little sense. The top 100 zipcodes is most of the data set -- 10,291 of the 10,815 observations. Can I
-# reduce this number? Am I supposed to use the inconsistently-named cities? Or am I actually to compare 10,291 to 524
+# reduce this number, like show the top 50? Am I supposed to use the inconsistently-named cities? Or am I actually to compare 10,291 to 524
 # observations?
+# Instead, I will show the trend of the top 100, putting each of the 100 zipcodes on the x-axis and showing the 
+# weighted mean.
+
+
 
 # Q10(2).2: Choose two other aspects from description that may improve the weighted mean of review_scores_rating
+#superhost
+#
 
 # PHIL
 
