@@ -432,10 +432,19 @@ ggplot(data = airbnb, aes(x = cleaning_fee_pct * 100)) +
 # PHIL - do not forget that you imputed a number of the median values ($80)
 # Consider Minimum Night Stays * Price, calc cleaning fee as pct of THAT
 
-#PHIL2 4.2.2: Minimum Night Stays
+# 4.2.2: Minimum Night Stays
 
+ggplot(data = airbnb %>% filter(minimum_nights < 90), aes(minimum_nights, reviews_per_month)) +
+  stat_function(fun = function(x) 31/x, color = "blue", size = 1) +
+  geom_point() +
+  ggtitle("Reviews Per Month by Minimum Nights") +
+  xlab("Minimum Nights") +
+  ylab("Reviews Per Month")
 
-
+# Something is wrong here. How can a listing with a 60-day minimum have 2 reviews per month?
+# I have added a blue curve, which is the theoretical maximum reviews_per_month a listing can
+# have (assumes all stays are for minimum length and 0% vacancy, and a 31-day month). It is possible that the listing
+# has increased the minimum stay after amassing a high number/frequency of reviews.
 
 #PHIL3 4.2.3: Reviews_Per_Month
 # Because I determined reviews_per_month was a good indicator of popularity, I thought I would
@@ -715,7 +724,6 @@ mean(airbnb$price)
 by(airbnb$price, airbnb$beach_desc, mean)
 airbnb %>% group_by(beach_desc) %>% summarise(mean(price))
 
-# PHIL add a table
 
 # Findings
 # The average price for all listings is $203.16. Listings that mention "beach" or "beaches" average price is 
@@ -751,7 +759,8 @@ airbnb %>% group_by(wc_beach>0) %>% summarise(n = n(), avg_price = mean(price), 
 
 # What listings are different?
 diffs <- airbnb$description[airbnb$beach_desc == FALSE & airbnb$wc_beach > 0]
-# beachfront, beachside, beachy, beachvolleyball for a few examples
+table(regmatches(diffs, regexpr("beach[[:alpha:]]*", diffs)))
+
 
 # 10.3: Select at least 3 other words from your dataframe and do similar analysis. What conclusions do you find?
 
@@ -774,9 +783,16 @@ airbnb %>% group_by(wc_balcony>0) %>% summarise(n = n(), avg_price = mean(price)
 # something more routine (e.g., bed). I focused on a few areas: food (kitchen vs restaurants), transportation (bus vs walking),
 # and the balcony (just curious about it more than anything).
 
+# Effect on Review Score
 # What I found is that these words had a small effect on the average review (the largest spread was 0.4, or just under
 # a quarter-star difference: "walk" and "restaurants" both scored higher than their non-walk and non-restaurant counterparts).
-# PHIL yammer on
+
+# Effect on Price
+# Food: Presence of either "kitchen" or "restaurant" is tied to a lower average price. Kitchen is $12 less than non-kitchen,
+# and restaurant is $26 less than non-restaurant.
+# Transportation: Presence of "bus" and "walk" are both linked to lower average price. Bus is $54 less than non-bus, and walk is $28 less
+# than non-walk. It seems that nobody really wants to think about taking the bus.
+# Balcony: Presence of "balcony" is also related to lower average price -- $14 less if the description mentions "balcony".
 
 # Q10(2)
 # Q10(2).1 Choose between zip code or city. Justify. Calculate number of listings for each in category. Filter to top 100.
