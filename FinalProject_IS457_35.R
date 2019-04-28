@@ -208,29 +208,99 @@ ggplot(data = airbnb, aes(x = host_since)) +
   ylab("Percent of Data (n = 10,815)")
 
 # Categorical Graphs
-for(i in names(airbnb[col_categories])){
-  print(i)
-  ggplot(data = airbnb, aes(x = i)) +
-    geom_histogram(stat="count")
-}
 
-lapply(airbnb[col_categories], function(thiscol){
-  print(names(thiscol))
-         ggplot(data = airbnb, aes(x = thiscol)) +
-         geom_histogram(stat="count")+
-         ggtitle(names(thiscol))}
-)
+ggplot(data = airbnb, aes(x = host_response_time)) +
+  geom_histogram(stat="count") +
+  ggtitle("Categorical Counts")
+
+ggplot(data = airbnb, aes(x = host_is_superhost)) +
+  geom_histogram(stat="count") +
+  ggtitle("Categorical Counts")
 
 ggplot(data = airbnb, aes(x = host_identity_verified)) +
   geom_histogram(stat="count") +
-  xlab("Host Since") +
-  ylab("Percent of Data (n = 10,815)")
+  ggtitle("Categorical Counts")
 
+ggplot(data = airbnb, aes(x = property_type)) +
+  geom_histogram(stat="count") +
+  ggtitle("Categorical Counts") +
+  theme(axis.text.x = element_text(angle = 90))
 
-# 3.2: Compare different graph types to see which ones best convey trends, outliers, and patterns
+ggplot(data = airbnb, aes(x = room_type)) +
+  geom_histogram(stat="count") +
+  ggtitle("Categorical Counts")
+
+ggplot(data = airbnb, aes(x = bed_type)) +
+  geom_histogram(stat="count") +
+  ggtitle("Categorical Counts")
+
+ggplot(data = airbnb, aes(x = cancellation_policy)) +
+  geom_histogram(stat="count") +
+  ggtitle("Categorical Counts")
+
+# Continuous Data Graphs
+
+ggplot(data = airbnb, aes(x = host_response_rate)) +
+  geom_density() +
+  ggtitle("Continuous Data")
+
+ggplot(data = airbnb, aes(x = accommodates)) +
+  geom_histogram(stat="count") +
+  ggtitle("Continuous Data")
+
+ggplot(data = airbnb, aes(x = bathrooms)) +
+  geom_histogram(stat="count") +
+  ggtitle("Continuous Data")
+
+ggplot(data = airbnb, aes(x = bedrooms)) +
+  geom_histogram(stat="count") +
+  ggtitle("Continuous Data")
+
+ggplot(data = airbnb, aes(x = beds)) +
+  geom_histogram(stat="count") +
+  ggtitle("Continuous Data")
+
+ggplot(data = airbnb, aes(x = price)) +
+  geom_density() +
+  ggtitle("Continuous Data")
+
+ggplot(data = airbnb, aes(x = cleaning_fee)) +
+  geom_density() +
+  ggtitle("Continuous Data")
+
+ggplot(data = airbnb, aes(x = guests_included)) +
+  geom_histogram(stat="count") +
+  ggtitle("Continuous Data")
+
+ggplot(data = airbnb, aes(x = extra_people)) +
+  geom_histogram(stat="count") +
+  ggtitle("Continuous Data")
+
+ggplot(data = airbnb, aes(x = minimum_nights)) +
+  geom_histogram(stat="count") +
+  ggtitle("Continuous Data")
+
+ggplot(data = airbnb, aes(x = number_of_reviews)) +
+  geom_density() +
+  ggtitle("Continuous Data")
+
+ggplot(data = airbnb, aes(x = review_scores_rating)) +
+  geom_density() +
+  ggtitle("Continuous Data")
 
 # What is the distribution of the different review scores?
 boxplot(airbnb[29:34], las=1, main = "Distribution of Scores")
+
+ggplot(airbnb, aes()) +
+  geom_boxplot()
+
+# 3.2: Compare different graph types to see which ones best convey trends, outliers, and patterns
+
+# For simply display of categorical data, the histogram counts work very well. I omitted the zipcode and city graphs,
+# because there were too many variables to render.
+
+# For continuous data, histograms worked well for variables with fewer counts, and density plots worked better for 
+# variables with a wider spread of values.
 
 # PHIL
 
@@ -317,20 +387,66 @@ ggplot(airbnb, aes(reviews_per_month, number_of_reviews)) +
 # have been around long enough to achieve high review counts. The lower-right quadrant contains the **best new listings**.
 # These listings have low counts, but are being reviewed frequently enough that it's expected they will work their way 
 # into the higher property counts. The lower-left quadrant contains **typical listings**.
+#
+# Ultimately, the right quadrants can be summarized as popular for a long time (upper right) and popular for a short
+# time (lower right). Thus, reviews_per_month is better suited as a measure of popularity.
 
 # 4.2: Analyze at least three other groups as in 4.1
 
-#PHIL1
-#PHIL2
-#PHIL3
+# 4.2.1: Cleaning Fee vs Price
+# Do expensive listings have higher cleaning fees? Or are hosts making up for low prices with high cleaning fees?
+
+airbnb$cleaning_fee_pct <- airbnb$cleaning_fee / airbnb$price
+summary(airbnb$cleaning_fee_pct) # bad news, we have infinite values
+airbnb %>% filter(price == 0) # dumb news, people have airbnbs with a price of 0
+
+# Some outlier expensive price listings were messing up the graph, so I filtered them
+ggplot(airbnb %>% filter(price < 5000), aes(price, cleaning_fee)) +
+  ggtitle("Price vs Cleaning Fee") +
+  geom_point() +
+  geom_abline(slope = 1, color = "blue", size = 1.5) +
+  xlab("Price") +
+  ylab("Cleaning Fee")
+  
+# 953 listings have a cleaning fee higher than the price
+airbnb %>% filter(cleaning_fee > price) %>% count()
+# This is 8.81% of all listings!
+airbnb %>% filter(cleaning_fee > price) %>% count() / airbnb %>% count() * 100
+
+# What does the distribution of cleaning fee percentages look like?
+ggplot(data = airbnb, aes(x = cleaning_fee_pct * 100)) +
+  geom_density(size = 1) +
+  ggtitle("Distribution of Cleaning Fee/Nightly Price Ratio", subtitle = "How much are AirBnB hosts charging for the the cleaning fee?") +
+  geom_vline(xintercept = 100, color = "blue", size = 1.5) +
+  xlab("Cleaning Fee as Percentage of Nightly Reservation Price") +
+  ylab("Density")
+
+# DISCUSS
+# PHIL - do not forget that you imputed a number of the median values ($80)
+# Consider Minimum Night Stays * Price, calc cleaning fee as pct of THAT
+
+#PHIL2 4.2.2: Minimum Night Stays
+
+
+
+
+#PHIL3 4.2.3: Reviews_Per_Month
+# Because I determined reviews_per_month was a good indicator of popularity, I thought I would
+# graph some other variables against it in a scatterplot and see if any patterns arise.
+
+ggplot(data = airbnb, aes(reviews_per_month, cleaning_fee)) +
+  geom_point()
 
 
 # Q5
 # Propose three different hypotheses for business analysis
+# As a hypothetical AirBnB host, I'm looking at three ways in which to upgrade my listing. My goal is to
+# either improve my overall rating from guests or be able to raise the price -- or potentially both. The
+# three upgrades I am considering are: a Pool, Cable TV subscription, or a BBQ Grill.
 
-#PHIL1
-#PHIL2
-#PHIL3
+# Listings with a Pool will have a higher price than those without
+# Listings with Cable TV will have a higher price than those without
+# Listings with a BBQ Grill will have a higher price than those without
 
 
 #########################
@@ -389,7 +505,12 @@ bwplot(prairbnb$reviews_per_month ~ prairbnb$property_type | prairbnb$bed_type +
 
 # 6.3: Make some plots to explore hypotheses in Q5. Explain your choice and describe interesting findings.
 
-# PHIL FOLLOW UP TO 5
+# Create the variables I need. grep() returns row numbers (i.e. row names)
+airbnb$has_pool <- rownames(airbnb) %in% grep("Pool", airbnb$amenities)
+airbnb$has_cable <- rownames(airbnb) %in% grep("Cable TV", airbnb$amenities)
+airbnb$has_bbq <- rownames(airbnb) %in% grep("BBQ ", airbnb$amenities)
+
+# PHIL makin graphs
 
 
 # Q7
@@ -428,7 +549,7 @@ airbnb %>% group_by(cancellation_policy) %>% summarise(mean = mean(review_scores
 #PHIL NOT SURE
 t.test(airbnb$review_scores_rating[airbnb$cancellation_policy == "flexible"],airbnb$review_scores_rating[airbnb$cancellation_policy == "moderate"])
 
-# PHIL MORE DATA MANIP
+# PHIL MORE DATA MANIP u doin it in 6.3
 # DPLYR
 # DONT FORGET TO GRAB COOL AMENITY DATA; YOUTHS LOVE WIFI
 airbnb %>% group_by(property_type) %>% summarise(mean = mean(review_scores_rating))
@@ -441,7 +562,15 @@ airbnb %>% group_by(number_of_amenities) %>% summarise(mean = mean(review_scores
 # Linear Modeling
 # Explain 10 variables; evaluate one
 
+# In question four, I established that reviews_per_month was the preferred measure of popularity (the right quadrants
+# were either popular for a long time, or popular for a short time). I will use reviews_per_month as the dependent
+# variable in this exercise.
 
+# ind vars: Price, Rating, 
+
+amodel <- lm(reviews_per_month ~ number_of_amenities, data = airbnb)
+summary(amodel)
+plot(amodel)
 
 ############################
 # PART 3: Further Analysis #
