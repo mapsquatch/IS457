@@ -1,7 +1,14 @@
 # Load libraries
+
+# install.packages("ggplot2")
+# install.packages("dplyr")
+# install.packages("lattice")
+# install.packages("reshape2")
+
 library(ggplot2)
 library(dplyr)
 library(lattice)
+library(reshape2)
 #require(RColorBrewer)
 
 ###########################
@@ -510,8 +517,29 @@ airbnb$has_pool <- rownames(airbnb) %in% grep("Pool", airbnb$amenities)
 airbnb$has_cable <- rownames(airbnb) %in% grep("Cable TV", airbnb$amenities)
 airbnb$has_bbq <- rownames(airbnb) %in% grep("BBQ ", airbnb$amenities)
 
-# PHIL makin graphs
+# ggplot boxplots require data in long format. melt() in reshape2 can help with that
+mair <- airbnb %>% filter(price < 500) %>% select(c("id", Pool = "has_pool", CableTV = "has_cable", BBQ = "has_bbq", "price")) %>% melt(id=c("id", "price"))
+ggplot(mair, aes(x=factor(variable), y=price)) + 
+  geom_boxplot(aes(fill = value))+
+  ggtitle("Amenity Influence in < $500 AirBnB") +
+  xlab("Amenity") +
+  ylab("Price Per Night")
 
+# Get the numbers
+mair %>% group_by(variable, value) %>% summarise(count = n(), mean_price = mean(price))
+
+# First, I filtered the data to eliminate any properties over $500/night. I did this because my
+# hypothetical rental is not in the extreme luxury class. I want to analyze my peer class.
+# Second, I had to format this data into a long table (due to ggplot's handling of boxplot). This
+# has the benefit of placing my plots next to each other for easy comparison.
+# The boxplot shows that the presensce of all of my potential amenities increase the price (at mean and
+# at IQR points). The table indicates that pool, cable, and bbq will increase the mean by 12, 40, and 30
+# dollars per night. To my surprise, the pool had the smallest effect on price, and was also associated 
+# with the lowest prices. Perhaps a pool is less novel in Sydney? Due to the large cost of installation, ongoing
+# costs, and small return, I will rule out the pool.
+# Cable TV and BBQ Grill are both cost-effective. Cable has an ongoing cost that will eat into profits, so I will compare the monthly cost
+# against my occupancy rates and my planned price increase.
+# The BBQ Grill is more of a one-time expense with a strong return. I will choose that one first.
 
 # Q7
 # 7.1: Clean the price
@@ -551,12 +579,12 @@ t.test(airbnb$review_scores_rating[airbnb$cancellation_policy == "flexible"],air
 
 # PHIL MORE DATA MANIP u doin it in 6.3
 # DPLYR
-# DONT FORGET TO GRAB COOL AMENITY DATA; YOUTHS LOVE WIFI
-airbnb %>% group_by(property_type) %>% summarise(mean = mean(review_scores_rating))
-airbnb %>% group_by(room_type) %>% summarise(mean = mean(review_scores_rating))
-airbnb %>% group_by(bed_type) %>% summarise(mean = mean(review_scores_rating))
-airbnb %>% group_by(number_of_amenities) %>% summarise(mean = mean(review_scores_rating))
+airbnb %>% group_by(property_type) %>% summarise(mean = mean(review_scores_rating)) %>% arrange(desc(mean))
+airbnb %>% group_by(room_type) %>% summarise(mean = mean(review_scores_rating)) %>% arrange(desc(mean))
+airbnb %>% group_by(bed_type) %>% summarise(mean = mean(review_scores_rating)) %>% arrange(desc(mean))
+airbnb %>% group_by(number_of_amenities) %>% summarise(mean = mean(review_scores_rating)) %>% arrange(desc(mean))
 
+# I added amenity data in 6.3. 
 
 # Q8
 # Linear Modeling
@@ -729,9 +757,19 @@ airbnb %>% group_by(wc_balcony>0) %>% summarise(n = n(), avg_price = mean(price)
 #head(sort(table(airbnb$zipcode[airbnb$zipcode != "unknown"]), decreasing = TRUE), 100)
 
 # I have just been learning the dplyr tools with this project, and I find this much more readable:
-airbnb %>% select(zipcode) %>% filter(zipcode != "unknown") %>% table() %>% sort(decreasing = TRUE) %>% head(100)
+# How many listings in the top 100?
+airbnb %>% select(zipcode) %>% filter(zipcode != "unknown") %>% table() %>% sort(decreasing = TRUE) %>% head(100) %>% sum()
 
-# PHIL
+# Filter the top 100 zipcodes
+zip100 <- airbnb %>% select(zipcode) %>% filter(zipcode != "unknown") %>% table() %>% sort(decreasing = TRUE) %>% head(100) %>% row.names()
+
+airbnb %>% filter(zipcode %in% zip100) %>% select(c(zipcode, price, number_of_reviews)) %>% group_by(zipcode) %>% summarise(wmean = weighted.mean(price, number_of_reviews))
+airbnb %>% filter(!(zipcode %in% zip100)) %>% count()
+
+# PHIL: 
+# This makes little sense. The top 100 zipcodes is most of the data set -- 10,291 of the 10,815 observations. Can I
+# reduce this number? Am I supposed to use the inconsistently-named cities? Or am I actually to compare 10,291 to 524
+# observations?
 
 # Q10(2).2: Choose two other aspects from description that may improve the weighted mean of review_scores_rating
 
