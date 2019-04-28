@@ -47,8 +47,7 @@ airbnb$host_response_rate <- as.numeric(gsub("%$","", airbnb$host_response_rate)
 airbnb$host_since <- as.Date(airbnb$host_since, format = "%m/%d/%y") #  add column of day units for comparing ages
 
 # Add a column -- number of days as host as of max(date)
-# airbnb$host_number_of_days <- difftime(max(airbnb$host_since), airbnb$host_since, units = "days")
-# CANCELLED: THIS IS FOR THE HOST, NOT THE PROPERTY
+airbnb$host_number_of_days <- difftime(max(airbnb$host_since), airbnb$host_since, units = "days")
 
 
 # Store logicals as logical. R requires a capial T or F
@@ -442,6 +441,7 @@ ggplot(data = airbnb %>% filter(minimum_nights < 90), aes(minimum_nights, review
   ylab("Reviews Per Month")
 
 # Something is wrong here. How can a listing with a 60-day minimum have 2 reviews per month?
+# I filtered out minimum stays of 90 or more, because they are outliers and didn't add useful information.
 # I have added a blue curve, which is the theoretical maximum reviews_per_month a listing can
 # have (assumes all stays are for minimum length and 0% vacancy, and a 31-day month). It is possible that the listing
 # has increased the minimum stay after amassing a high number/frequency of reviews.
@@ -611,11 +611,15 @@ airbnb %>% group_by(number_of_amenities) %>% summarise(mean = mean(review_scores
 # were either popular for a long time, or popular for a short time). I will use reviews_per_month as the dependent
 # variable in this exercise.
 
-# ind vars: Price, Rating, 
+# ind vars: Price, Rating, num amenities, num verifications, review_scores_value
+# zipcode is highest so far
 
-amodel <- lm(reviews_per_month ~ number_of_amenities, data = airbnb)
+amodel <- lm(reviews_per_month ~ host_is_superhost, data = airbnb)
+amodel <- lm(reviews_per_month ~ zipcode, data = airbnb)
 summary(amodel)
 plot(amodel)
+
+
 
 ############################
 # PART 3: Further Analysis #
@@ -626,19 +630,42 @@ plot(amodel)
 # 9.1: Explore relationships (if any) between superhost and host_since, host_response_time, host_response_rate.
 # host_verifications, host_identity_verified
 
-# PHIL Q9 is FUCKED
-# Make host_verifications useful
-mair <- airbnb %>% select(c("id", "host_response_time", "host_response_rate", "host_verifications", "price")) %>% melt(id=c("id", "price"))
-ggplot(mair, aes(x=factor(variable), y=price)) + 
-  geom_boxplot(aes(fill = value))+
-  ggtitle("Amenity Influence in < $500 AirBnB") +
-  xlab("Amenity") +
-  ylab("Price Per Night")
-ggplot(data = airbnb, aes(host_is_superhost, reviews_per_month)) +
-  geom_boxplot() +
-  ggtitle("Reviews Per Month by Price") +
-  xlab("Is Superhost") +
-  ylab("Reviews Per Month")
+# STEP 1: Make host_verifications useful
+# Get table of verification counts
+#table(sapply(airbnb$host_verifications, function(x) length(strsplit(x,",")[[1]])))
+#airbnb %>% select(host_verifications, number_of_verifications) %>% filter(host_verifications == "[]")
+
+# Split amenities on comma, assign comma count (or 1 if no commas)
+airbnb$number_of_verifications <- sapply(airbnb$host_verifications, function(x) length(strsplit(x,",")[[1]]))
+
+# Clean up the ones; some values of 1 are empty; these are []
+airbnb <- within(airbnb, number_of_verifications[host_verifications == "[]"] <- 0)
+
+ggplot(airbnb, aes(host_is_superhost, host_response_rate, fill = host_is_superhost)) +
+  geom_violin() +
+  labs(x = "Host is Superhost", y = "Host Response Rate", title = "Host Response Rate by Superhost")
+
+ggplot(airbnb, aes(host_is_superhost, number_of_verifications, fill = host_is_superhost)) +
+  geom_violin() +
+  labs(x = "Host is Superhost", y = "Number of Verifications", title = "Number of Verifications by Superhost")
+
+ggplot(airbnb, aes(host_is_superhost, host_number_of_days, fill = host_is_superhost)) +
+  geom_violin() +
+  labs(x = "Host is Superhost", y = "Time as Host (Days)", title = "Days as Host by Superhost")
+
+
+
+#mair <- airbnb %>% select(c("id", "host_is_superhost", "host_response_time", "host_response_rate", "number_of_verifications")) %>% melt(id=c("id", "host_is_superhost"))
+#ggplot(mair, aes(x=factor(variable), y=price)) + 
+#  geom_boxplot(aes(fill = value))+
+#  ggtitle("Amenity Influence in < $500 AirBnB") +
+#  xlab("Amenity") +
+#  ylab("Price Per Night")
+#ggplot(data = airbnb, aes(host_is_superhost, reviews_per_month)) +
+#  geom_boxplot() +
+#  ggtitle("Reviews Per Month by Price") +
+#  xlab("Is Superhost") +
+#  ylab("Reviews Per Month")
 
 # 9.2: Create mosaic plot for host_response_time by superhost. What do you learn?
 
