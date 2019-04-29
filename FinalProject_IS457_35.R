@@ -861,9 +861,79 @@ airbnb %>% filter(!(zipcode %in% zip100)) %>% count()
 
 # Conduct further analysis
 
+#install.packages(c("sp", "rgdal"))
+library(sp)
+library(rgdal)
+
+# Postal Areas ASGS Ed 2016 Digital Boundaries in ESRI Shapefile Format
+# Shapefile from http://www.abs.gov.au/AUSSTATS/abs@.nsf/DetailsPage/1270.0.55.003July%202016?OpenDocument
+# direct link: http://www.abs.gov.au/ausstats/subscriber.nsf/log?openagent&1270055003_poa_2016_aust_shape.zip&1270.0.55.003&Data%20Cubes&4FB811FA48EECA7ACA25802C001432D0&0&July%202016&13.09.2016&Previous
+# Processed in ArcGIS to inner join postal codes
+# Post-processed data available for download at: https://github.com/mapsquatch/IS457/tree/master/data
+shape <- readOGR(dsn = ".\\data", layer = "sydneyGIS")
+
+# de-factor the merge field
+shape$POA_CODE16 <- as.character(shape$POA_CODE16)
+
+# Summarize by postcode; mutate new variables for NUMBER of listings mentioning walk or bus (the word counts could do multiples per listing)
+attrtable <- airbnb %>% mutate(n_walk = wc_walk > 0, n_bus = wc_bus > 0) %>% group_by(zipcode) %>% summarise(n = n(), walk = sum(n_walk), bus = sum(n_bus), avg_rev_mo = mean(reviews_per_month))
+
+sydneylyr <- merge(shape, attrtable, by.x = "POA_CODE16", by.y = "zipcode")
+
+# Plot Average Reviews Per Month
+spplot(sydneylyr, "avg_rev_mo", main = "Average Reviews per Month", col = "transparent")
 
 
+# Side by side plot
+# Plot Walk Mentions
+sp_out_walk <- spplot(sydneylyr, "walk", main = "Listings with 'Walk' in Description", col = "transparent")
+print(sp_out_walk, split=c(1, 1, 2, 1), more=TRUE)
+# Plot Bus Mentions
+sp_out_bus <- spplot(sydneylyr, "bus", main = "Listings with 'Bus' in Description", col = "transparent")
+print(sp_out_bus, split=c(2, 1, 2, 1), more=FALSE) 
 
+# Now zoom in to harbor area
+scale.parameter = 0.3  # scaling parameter. less than 1 is zooming in, more than 1 zooming out. 
+xshift = 0.35  # Shift to right in map units. 
+yshift = -0.2  # Shift to left in map units. 
+original.bbox = sydneylyr@bbox  # Pass bbox of your Spatial* Object. 
+
+edges = original.bbox
+edges[1, ] <- (edges[1, ] - mean(edges[1, ])) * scale.parameter + mean(edges[1, ]) + xshift
+edges[2, ] <- (edges[2, ] - mean(edges[2, ])) * scale.parameter + mean(edges[2, ]) + yshift
+                                                                             
+# Plot Walk Mentions - ZOOM IN
+sp_out_walk <- spplot(sydneylyr, "walk", main = "Listings with 'Walk' in Description", col = "transparent", xlim = edges[1, ], ylim = edges[2, ])
+print(sp_out_walk, split=c(1, 1, 2, 1), more=TRUE)
+# Plot Bus Mentions - ZOOM IN
+sp_out_bus <- spplot(sydneylyr, "bus", main = "Listings with 'Bus' in Description", col = "transparent", xlim = edges[1, ], ylim = edges[2, ])
+print(sp_out_bus, split=c(2, 1, 2, 1), more=FALSE) 
+
+
+# Findings
+# To start with, postal codes are dynamic features that change over time. These are from 2016, which is within
+# the date range of our analysis, and thus a suitable dataset for use.
+
+# I wanted to further explore the transportation options in the description. My hypothesis was that there would be
+# more mentions of bus in postcodes a little further from the most central.
+
+# My methodology was to take the word counts of each target word in the description, and calculate (mutate) a logical variable
+# for analysis that would contain TRUE if the listing contained the target word. Then, summing the raw counts, display them
+# on the map.
+
+# I also attempted this with normalizing the data by listings, so it created a density -- or percent of listings in a postcode
+# containing the target words. However, this was skewed by the more rural postcodes with fewer listings, and the map
+# appeared a mess.
+
+# In using the raw counts, there is an inherent bias where postcodes with more listings will have more listings containing
+# the target words, assuming an even distribution. In effect, this ultimately shows the postcodes with the most listings.
+
+# However, the side by side choropleth maps still provide some value, because the color ramp is symbolized relative to 
+# each target word, and we can compare the colors to detect any patterns.
+
+# In this analysis, I see higher values for "bus" through the periphery (the medium shades of blue), and thus my
+# hypothesis seems to be supported, but not strongly. More statistical analysis is required (but impossible due to
+# time contstraints).
 
 ######################
 # PART 5: Conclusion #
