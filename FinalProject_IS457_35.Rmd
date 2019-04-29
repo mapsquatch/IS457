@@ -1,3 +1,16 @@
+---
+title: "FinalProject_IS457_35"
+author: '35'
+date: "April 29, 2019"
+output: word_document
+---
+
+```{r echo = FALSE}
+# set global plot size options
+knitr::opts_chunk$set(fig.width=8, fig.height=6)
+```
+
+```{r message=FALSE}
 # Load libraries
 
 # install.packages("ggplot2")
@@ -11,13 +24,16 @@ library(lattice)
 library(reshape2)
 #require(RColorBrewer)
 
+```
+
 ###########################
-# PART 1: Data Processing #
+  PART 1: Data Processing 
 ###########################
 
 # Q1
-# 1.1: What variables have missing values? What types/forms of missing values are they?
+**1.1: What variables have missing values? What types/forms of missing values are they?**
 
+```{r message=FALSE}
 # Initial read of the data:
 # airbnb <- read.csv(paste(getwd(),"/data/AirbnbSydney.csv", sep = ""), stringsAsFactors = FALSE)
 
@@ -54,43 +70,33 @@ airbnb$host_number_of_days <- difftime(max(airbnb$host_since), airbnb$host_since
 airbnb$host_is_superhost <- as.logical(toupper(airbnb$host_is_superhost))
 airbnb$host_identity_verified <- as.logical(toupper(airbnb$host_identity_verified))
 
+```
 
-
-# My answer
-#* Neighborhood_overview and house_rules are both text-heavy (paragraph or more) fields, NA on 6 and 15%. NA values
-# are shown as empty strings: ""
-#* Host_response_time and host_response_rate are both absent from 23% of the observations. Response Time is an
-# ordinal categorization of how long it takes to respond. Response Rate is a percentage that is imported as
-# character, but will be converted to numeric. NA values are shown as valid character element "N/A".
-# City and zipcode are address components useful for aggregation. They are missing from 8 and 21 records (nearly
-# zero percent) of these character vectors.
-#* Bathrooms is a numeric with decimals (due to half bath, .5). NA values are characters "NA".
-#* Bedrooms is an integer numeric. NA values are characters "NA".
-# Cleaning_fee is a numerical (after cleaning) and missing from 6% of records.
-#* Review_scores_rating and review_scores_xxx are missing one observation in each column. These are integer values.
-# NA values are characters "NA".
+### My answer
+* Neighborhood_overview and house_rules are both text-heavy (paragraph or more) fields, NA on 6 and 15%. NA values are shown as empty strings: \"\"
+* Host_response_time and host_response_rate are both absent from 23% of the observations. Response Time is an ordinal categorization of how long it takes to respond. Response Rate is a percentage that is imported as character, but will be converted to numeric. NA values are shown as valid character element "N/A".
+* City and zipcode are address components useful for aggregation. They are missing from 8 and 21 records (nearly zero percent) of these character vectors.
+* Bathrooms is a numeric with decimals (due to half bath, .5). NA values are characters "NA".
+* Bedrooms is an integer numeric. NA values are characters "NA".
+* Cleaning_fee is a numerical (after cleaning) and missing from 6% of records.
+* Review_scores_rating and review_scores_xxx are missing one observation in each column. These are integer values. NA values are characters "NA".
 
 
 # 1.2: How will you deal with missing values? Justify your methods.
 
-# For categorical data with missing values (such as city, zipcode, response_time), I imputed a value of "unknown." This 
-# preserves the known data, and allows for omission of this value if necessary. I find it preferable to reduce the number
-# of observations than to potentially impute incorrect values.
+For categorical data with missing values (such as city, zipcode, response_time), I imputed a value of "unknown." This  preserves the known data, and allows for omission of this value if necessary. I find it preferable to reduce the number of observations than to potentially impute incorrect values.
 
-# For numerical data, I used the median. This value is not affected by outliers. It is simply the value where half of
-# the observations are higher, and half are lower. 
-
+For numerical data, I used the median. This value is not affected by outliers. It is simply the value where half of the observations are higher, and half are lower. 
 
 # 1.3: Describe how your choice method may impact later analysis.
 
-# Imputing "unknown" for categorical data adds another category. It helps to preserve the known values for that
-# observation, so na.rm() won't remove the observation with the analyst possibly being unaware of its removal.
+Imputing "unknown" for categorical data adds another category. It helps to preserve the known values for that observation, so na.rm() won't remove the observation with the analyst possibly being unaware of its removal.
 
-# Imputing median values will increase the measure of centrality, while reducing the variance and standard deviation
-# for those variables.
+Imputing median values will increase the measure of centrality, while reducing the variance and standard deviation for those variables.
 
 # 1.4: Implement methods to deal with missing values.
 
+```{r message=FALSE}
 # NA neighborhood_overview and house_rules
 # Do nothing, because these are descriptive text values and there is no way to impute them.
 
@@ -149,25 +155,26 @@ for(i in 28:34){
   airbnb[is.na(airbnb[,i]),i] <- median(airbnb[,i], na.rm = TRUE)
 }
 
+```
 
 # 1.5: After dealing with missing values, show the dimensions of the data.
 
+```{r message=FALSE}
 # Show dimensions
 dim(airbnb)
+```
 
-# 1.6: Comment on and explain any other data cleaning or preparation steps you think would be 
-#      necessary from your inspection of the data (you do not have to carry them out).
+# 1.6: Comment on and explain any other data cleaning or preparation steps you think would be necessary from your inspection of the data (you do not have to carry them out).
 
-# host_since will need to be converted to date.
-# host_response_time should become a factor (to compare levels)
-# host_response_rate need the % sign scrubbed and converted to numeric (maybe even percentage, e.g. /100)
-# price and cleaning_fee need $ scrubbed and converted to numeric
-
-
+host_since will need to be converted to date.
+host_response_time should become a factor (to compare levels)
+host_response_rate need the % sign scrubbed and converted to numeric (maybe even percentage, e.g. /100)
+price and cleaning_fee need $ scrubbed and converted to numeric
 
 # Q2
-# Conduct a preliminary exploration and describe what you find interesting or unexpected.
+**Conduct a preliminary exploration and describe what you find interesting or unexpected.**
 
+```{r message=FALSE}
 # This will create two lists: counts (table()) for categorical data, and summaries for continuous data
 # This allows me to visually inspect the numerical distribution of each variable (using View())
 col_categories <- c(7,9,11:20,35)
@@ -178,44 +185,46 @@ summaries <- lapply(airbnb[,col_continuous], function(x) summary(x))
 sds <- lapply(airbnb[,col_continuous], function(x) sd(x))
 
 counts
+```
 
-# host_response_time: Most hosts respond quickly (within an hour), although the imputed unknown category makes up the second-largest percentage.
-# host_is_superhost: 2795 of the 10,815 are superhosts.
-# host_identity_verified: just under half of listing have a verified host. This even number could make for good comparisons if splitting the data.
-# city: What a mess! Invalid charactersets, inconsistent naming and upper/lower casing of city names (see: Bondi Beach, bondi beach, Bondi beach, "Bondi Beach, Sydney"). I will ignore if possible.
-# zipcode: The distribution is uneven, and I don't know anything about the districts themselves. However, it's the cleanest geographic data available.
-# property_type: Mostly Apartment (~58%) and House (~24%), although 31 property types total.
-# room_type: Three categories. Predominantly Entire home/apt, 26% Private room, and only 84 in a Shared room.
-# accommodates: Mostly 2, 4, 6, 3, 1, 5, then 8, 7, 10, and up to 16. Even numbers are more common.
-# bathrooms: Mostly 1 or 2, but goes up to 10!
-# bedrooms: Zero to four are "common" (>500), but continous up to 7 BR, then an outlier with 14 bedrooms.
-# beds: Zero to 14, then 16, 18, and 29(!). Interesting about zero beds; maybe a couch?
-# bed_type: Aha, couch is a type. 99.28% Real bed, with the remainder scattered around lesser bed types. There are 77 non-Real bed observations. It is plausible that the 69 zero beds observations are included in the 77.
-# cancellation_policy: Five categories -- flexible, moderate, strict and two levels of super_strict. I wonder if this affects reviews?
+* host_response_time: Most hosts respond quickly (within an hour), although the imputed unknown category makes up the second-largest percentage.
+* host_is_superhost: 2795 of the 10,815 are superhosts.
+* host_identity_verified: just under half of listing have a verified host. This even number could make for good comparisons if splitting the data.
+* city: What a mess! Invalid charactersets, inconsistent naming and upper/lower casing of city names (see: Bondi Beach, bondi beach, Bondi beach, "Bondi Beach, Sydney"). I will ignore if possible.
+* zipcode: The distribution is uneven, and I don't know anything about the districts themselves. However, it's the cleanest geographic data available.
+* property_type: Mostly Apartment (~58%) and House (~24%), although 31 property types total.
+* room_type: Three categories. Predominantly Entire home/apt, 26% Private room, and only 84 in a Shared room.
+* accommodates: Mostly 2, 4, 6, 3, 1, 5, then 8, 7, 10, and up to 16. Even numbers are more common.
+* bathrooms: Mostly 1 or 2, but goes up to 10!
+* bedrooms: Zero to four are "common" (>500), but continous up to 7 BR, then an outlier with 14 bedrooms.
+* beds: Zero to 14, then 16, 18, and 29(!). Interesting about zero beds; maybe a couch?
+* bed_type: Aha, couch is a type. 99.28% Real bed, with the remainder scattered around lesser bed types. There are 77 non-Real bed observations. It is plausible that the 69 zero beds observations are included in the 77.
+* cancellation_policy: Five categories -- flexible, moderate, strict and two levels of super_strict. I wonder if this affects reviews?
 
+```{r message=FALSE}
 summaries
 sds
+```
 
-# Summaries help with quartiles and ranges, skew can be somewhat interpreted by comparing median to mean.
+Summaries help with quartiles and ranges, skew can be somewhat interpreted by comparing median to mean.
 
-# host_since: median and mean almost identical; six years from min to median, 3.5 years median to max. Listings have been added more frequently over time.
-# host_response_rate: 1st quartile is 100%, so most hosts respond to inquiries.
-# price: median of 150 and mean of 203 indicates positive skew. This is expected on this type of variable; prices have no upper limit, but are bound on the lower end by zero.
-# cleaning_fee: same positive skew as price
-# guests_included: strong positive skew. median is 1, 3rd quar is 2, and mean is 1.969. Max of 16
-# extra_people: the max value of 410 may be influencing the mean
-# minimum_nights: skewed HEAVILY by the max of 500. A 500 night minimum seems to go against the typical use case for AirBnB that I understand. Higher minimum night values will suppress the possible number of reviews per month. I want to explore this.
-# number_of_reviews: median is 12; max is 493. Indicates popularity and longevity of a listing.
-# review_scores_rating: the overall rating on a scale of 20 to 100 (the minimum is 20). Can I assume this relates to a 5 star rating scale, where each star is worth 20 points?
-# review_scores_xxx: the xxx refers to subcategories of six review components: accuracy (of listing description), cleanliness, checkin, communication, location, and value.
-# reviews_per_month: effectively -- number_of_reviews / number of months listed. median .95, mean 1.5. max of 15.18 (averaging a new guest every other night!)
-
-
+* host_since: median and mean almost identical; six years from min to median, 3.5 years median to max. Listings have been added more frequently over time.
+* host_response_rate: 1st quartile is 100%, so most hosts respond to inquiries.
+* price: median of 150 and mean of 203 indicates positive skew. This is expected on this type of variable; prices have no upper limit, but are bound on the lower end by zero.
+* cleaning_fee: same positive skew as price
+* guests_included: strong positive skew. median is 1, 3rd quar is 2, and mean is 1.969. Max of 16
+* extra_people: the max value of 410 may be influencing the mean
+* minimum_nights: skewed HEAVILY by the max of 500. A 500 night minimum seems to go against the typical use case for AirBnB that I understand. Higher minimum night values will suppress the possible number of reviews per month. I want to explore this.
+* number_of_reviews: median is 12; max is 493. Indicates popularity and longevity of a listing.
+* review_scores_rating: the overall rating on a scale of 20 to 100 (the minimum is 20). Can I assume this relates to a 5 star rating scale, where each star is worth 20 points?
+* review_scores_xxx: the xxx refers to subcategories of six review components: accuracy (of listing description), cleanliness, checkin, communication, location, and value.
+* reviews_per_month: effectively -- number_of_reviews / number of months listed. median .95, mean 1.5. max of 15.18 (averaging a new guest every other night!)
 
 # Q3
-# Explore comprehensively with charts, tables, and graphs
+**Explore comprehensively with charts, tables, and graphs**
 # 3.1: Think about types of variables; choose appropriate graphs to find distributions and trends
 
+```{r message=FALSE}
 # Date / Host Growth Over Time
 ggplot(data = airbnb, aes(x = host_since)) +
   stat_ecdf(geom = "step") +
@@ -306,34 +315,28 @@ ggplot(data = airbnb, aes(x = review_scores_rating)) +
 
 # What is the distribution of the different review scores?
 boxplot(airbnb[29:34], las=1, main = "Distribution of Scores")
-
+```
 
 # 3.2: Compare different graph types to see which ones best convey trends, outliers, and patterns
 
-# For simply display of categorical data, the histogram counts work very well. I omitted the zipcode and city graphs,
-# because there were too many variables to render.
+For simply display of categorical data, the histogram counts work very well. I omitted the zipcode and city graphs, because there were too many variables to render.
 
-# For continuous data, histograms worked well for variables with fewer counts, and density plots worked better for 
-# variables with a wider spread of values.
+For continuous data, histograms worked well for variables with fewer counts, and density plots worked better for  variables with a wider spread of values.
 
-# For variables with similar value scale, a boxplot does a good job of showing distribution statistics in a side-by-side fashion.
+For variables with similar value scale, a boxplot does a good job of showing distribution statistics in a side-by-side fashion.
 
 # 3.3: Describe what you find from the graphs
 
-# Some of the categorical values have an even distribution (e.g., host_verified), but most have values that are more
-# common than others. Bed_type is mostly "real bed". Property_type are predominantly house and apartment, even though
-# there are 31 types.
-# Most of the review scores are focused on the high end of the scale, so they have a small standard deviations (<1). 
-# In retrospect, I could have done a litt
+Some of the categorical values have an even distribution (e.g., host_verified), but most have values that are more common than others. Bed_type is mostly "real bed". Property_type are predominantly house and apartment, even though there are 31 types.
+
+Most of the review scores are focused on the high end of the scale, so they have a small standard deviations (<1). In retrospect, I could have done a litt
 
 # Q4
 # 4.1: Compare and contrast review_per_month and number_of_reviews
 
-# So my general theory is that number of reviews is partly a function of time (listings that have been around longer
-# have more opportunities to be reviewed). So I want to explore what happens if we normalize the number of reviews
-# by the number of months the listing has existed. I thought I could use host_since, but this is about the *host* and
-# not the *property*.
+So my general theory is that number of reviews is partly a function of time (listings that have been around longer have more opportunities to be reviewed). So I want to explore what happens if we normalize the number of reviews by the number of months the listing has existed. I thought I could use host_since, but this is about the *host* and not the *property*.
 
+```{r message=FALSE}
 # Errors of my ways: some host_ids have multiple listings
 airbnb %>% select(host_id) %>% table() %>% sort(decreasing = TRUE) %>% head(15)
 # Affirm that host_since is the same for all listings, using one of the top host_ids
@@ -343,11 +346,11 @@ airbnb %>% select(host_id, host_since) %>% filter(host_id == '2450066') %>% head
 # Find rates
 airbnb <- airbnb %>% mutate(months_listed = number_of_reviews / reviews_per_month)
 max(airbnb$months_listed) # 102 months max; 102.1 * 5 = 510.5. Use this in the red line.
+```
 
-# Now I have calculated the number of months a listing has been available, but it is calculated using
-# the two variables, so this data (months_listed) is literally a function of the two. Let's just plot them 
-# and have a look.
+Now I have calculated the number of months a listing has been available, but it is calculated using the two variables, so this data (months_listed) is literally a function of the two. Let's just plot them  and have a look.
 
+```{r message=FALSE}
 # A simple scatterplot of the two variables
 ggplot(airbnb, aes(reviews_per_month, number_of_reviews)) +
   ggtitle("Reviews Per Month vs Number of Reviews") +
@@ -356,14 +359,13 @@ ggplot(airbnb, aes(reviews_per_month, number_of_reviews)) +
   geom_point() +
   xlab("Reviews Per Month") +
   ylab("Number of Reviews")
+```
 
-# This graph shows a scatterplot of the two variables against each other. The blue line represents the
-# max rate (1:1, that is, 30 reviews in one month). So a point near the blue line is receiving reviews as
-# frequently as possible. The red line represents the minimum number of reviews a property could receive, for
-# the given reviews per month and the maximum age of a listing in this dataset (102.1 months).
+This graph shows a scatterplot of the two variables against each other. The blue line represents the max rate (1:1, that is, 30 reviews in one month). So a point near the blue line is receiving reviews as frequently as possible. The red line represents the minimum number of reviews a property could receive, for the given reviews per month and the maximum age of a listing in this dataset (102.1 months).
 
-# Now let's look at overlap between the top 100 of each variable
+Now let's look at overlap between the top 100 of each variable
 
+```{r message=FALSE}
 #head(sort(airbnb$reviews_per_month, decreasing = TRUE), 100) # DELETE
 # order() pulls the row values; I can use these to subset the IDs
 top100rpm <- airbnb$id[head(order(airbnb$reviews_per_month, decreasing = TRUE), 100)]
@@ -386,34 +388,26 @@ ggplot(airbnb, aes(reviews_per_month, number_of_reviews)) +
   geom_point(data = airbnb[airbnb$id %in% intersect(top100rpm, top100nrev),], size = 3) +
   xlab("Reviews Per Month") +
   ylab("Number of Reviews")
+```
 
+## Discussion and findings
+These two variables (number of reviews and reviews per month) both describe the populariy of a listing,
+but in different ways. Number of reviews is the total number of reviews. Properties with a high value here will have had the most guests visit. However, this metric is influenced by the length of time it has been around. Reviews per month attempts to account for the time a listing has been offered by normalizing the data against the number of months is has been available (and earlier I back-calculated the number of months). New listings with a  strong opening can lead this metric. One potential drawback to the reviews_per_month variable is that it penalizes listings with higher minimum night stays. Listings with a seven-night minimum would have a four review_per_month ceiling.
 
-# Discussion and findings
-# These two variables (number of reviews and reviews per month) both describe the populariy of a listing,
-# but in different ways. Number of reviews is the total number of reviews. Properties with a high value here will
-# have had the most guests visit. However, this metric is influenced by the length of time it has been around.
-# Reviews per month attempts to account for the time a listing has been offered by normalizing the data against the
-# number of months is has been available (and earlier I back-calculated the number of months). New listings with a 
-# strong opening can lead this metric. One potential drawback to the reviews_per_month variable is that it penalizes
-# listings with higher minimum night stays. Listings with a seven-night minimum would have a four review_per_month
-# ceiling.
-# 22 listings are in both the top 100 review_per_month and the top 100 number_of_reviews.
-# I have added reference lines to the graph illustrating the minimum value in the top 100
-# of each variable, then highlighted the values in the top 100 of each (the upper right quadrant).
-# The upper-right quadrant is the **best of the best** -- popular for a long time and frequently reviewed. The
-# upper-left quadrant contains **established favorites**. These properties have a lower review frequency, but they
-# have been around long enough to achieve high review counts. The lower-right quadrant contains the **best new listings**.
-# These listings have low counts, but are being reviewed frequently enough that it's expected they will work their way 
-# into the higher property counts. The lower-left quadrant contains **typical listings**.
-#
-# Ultimately, the right quadrants can be summarized as popular for a long time (upper right) and popular for a short
-# time (lower right). Thus, reviews_per_month is better suited as a measure of popularity.
+22 listings are in both the top 100 review_per_month and the top 100 number_of_reviews.
+I have added reference lines to the graph illustrating the minimum value in the top 100 of each variable, then highlighted the values in the top 100 of each (the upper right quadrant).
+
+The upper-right quadrant is the **best of the best** -- popular for a long time and frequently reviewed. The upper-left quadrant contains **established favorites**. These properties have a lower review frequency, but they have been around long enough to achieve high review counts. The lower-right quadrant contains the **best new listings**. These listings have low counts, but are being reviewed frequently enough that it's expected they will work their way  into the higher property counts. The lower-left quadrant contains **typical listings**.
+
+Ultimately, the right quadrants can be summarized as popular for a long time (upper right) and popular for a short time (lower right). Thus, reviews_per_month is better suited as a measure of popularity.
 
 # 4.2: Analyze at least three other groups as in 4.1
 
 # 4.2.1: Cleaning Fee vs Price
-# Do expensive listings have higher cleaning fees? Or are hosts making up for low prices with high cleaning fees?
 
+Do expensive listings have higher cleaning fees? Or are hosts making up for low prices with high cleaning fees?
+
+```{r message=FALSE}
 airbnb$cleaning_fee_pct <- airbnb$cleaning_fee / airbnb$price
 summary(airbnb$cleaning_fee_pct) # bad news, we have infinite values
 airbnb %>% filter(price == 0) # dumb news, people have airbnbs with a price of 0
@@ -438,77 +432,69 @@ ggplot(data = airbnb, aes(x = cleaning_fee_pct * 100)) +
   geom_vline(xintercept = 100, color = "blue", size = 1.5) +
   xlab("Cleaning Fee as Percentage of Nightly Reservation Price") +
   ylab("Density")
-
+```
 # DISCUSS
 # PHIL - do not forget that you imputed a number of thPHILe median values ($80)
 # Consider Minimum Night Stays * Price, calc cleaning fee as pct of THAT
 
 # 4.2.2: Minimum Night Stays
 
+```{r message=FALSE}
 ggplot(data = airbnb %>% filter(minimum_nights < 90), aes(minimum_nights, reviews_per_month)) +
   stat_function(fun = function(x) 31/x, color = "blue", size = 1) +
   geom_point() +
   ggtitle("Reviews Per Month by Minimum Nights") +
   xlab("Minimum Nights") +
   ylab("Reviews Per Month")
+```
 
-# Something is wrong here. How can a listing with a 60-day minimum have 2 reviews per month?
-# I filtered out minimum stays of 90 or more, because they are outliers and didn't add useful information.
-# I have added a blue curve, which is the theoretical maximum reviews_per_month a listing can
-# have (assumes all stays are for minimum length and 0% vacancy, and a 31-day month). It is possible that the listing
-# has increased the minimum stay after amassing a high number/frequency of reviews.
+Something is wrong here. How can a listing with a 60-day minimum have 2 reviews per month? I filtered out minimum stays of 90 or more, because they are outliers and didn't add useful information. I have added a blue curve, which is the theoretical maximum reviews_per_month a listing can have (assumes all stays are for minimum length and 0% vacancy, and a 31-day month). It is possible that the listing has increased the minimum stay after amassing a high number/frequency of reviews.
 
-#PHIL3 4.2.3: Reviews_Per_Month
-# Because I determined reviews_per_month was a good indicator of popularity, I thought I would
-# graph some other variables against it in a scatterplot and see if any patterns arise.
+# 4.2.3: Reviews_Per_Month
 
+Because I determined reviews_per_month was a good indicator of popularity, I thought I would graph some other variables against it in a scatterplot and see if any patterns arise.
+
+```{r message=FALSE}
 ggplot(data = airbnb, aes(cleaning_fee, reviews_per_month)) +
   geom_point() +
   geom_smooth(method = "lm", se=FALSE) +
   ggtitle("Reviews Per Month by Cleaning Fee") +
   xlab("Cleaning Fee") +
   ylab("Reviews Per Month")
-
+```
 
 # Findings
-# Here I have a graph showing how the reviews_per_month relate to the cleaning fee. The blue line
-# is the line of best fit. With a negative slope, this implies that as the cleaning fee increases,
-# the reviews_per_month decreases.
+Here I have a graph showing how the reviews_per_month relate to the cleaning fee. The blue line is the line of best fit. With a negative slope, this implies that as the cleaning fee increases, the reviews_per_month decreases.
 
 # Q5
-# Propose three different hypotheses for business analysis
-# As a hypothetical AirBnB host, I'm looking at three ways in which to upgrade my listing. My goal is to
-# either improve my overall rating from guests or be able to raise the price -- or potentially both. The
-# three upgrades I am considering are: a Pool, Cable TV subscription, or a BBQ Grill.
+**Propose three different hypotheses for business analysis**
 
-# Listings with a Pool will have a higher price than those without
-# Listings with Cable TV will have a higher price than those without
-# Listings with a BBQ Grill will have a higher price than those without
+As a hypothetical AirBnB host, I'm looking at three ways in which to upgrade my listing. My goal is to either improve my overall rating from guests or be able to raise the price -- or potentially both. The three upgrades I am considering are: a Pool, Cable TV subscription, or a BBQ Grill.
+
+* Listings with a Pool will have a higher price than those without
+* Listings with Cable TV will have a higher price than those without
+* Listings with a BBQ Grill will have a higher price than those without
 
 
 #########################
-# PART 2: Data Analysis #
+  PART 2: Data Analysis 
 #########################
 
 # Q6
-# 6.1: Make ONE plot to visualize relationship between review_scores_rating and number of reviews
-# for all categories of property_type. Explain your findings.
+**6.1: Make ONE plot to visualize relationship between review_scores_rating and number of reviews for all categories of property_type. Explain your findings.**
 
+```{r message=FALSE}
 xyplot(airbnb$number_of_reviews ~ airbnb$review_scores_rating | airbnb$property_type, groups = airbnb$property_type, xlab = "Review Rating (20 = 1 star, 100 = 5 star)", ylab = "Number of Reviews", main="AirBnB Review Scores vs Number of Reviews (Sydney, Australia)")
+```
 
 # Findings
-# Although certain property types are more common than others, the distributions are largely similar: it is rare for 
-# a rental to get over 100 reviews if it is not at least a four-star property (rating = 80). This is why under the 100 
-# review line, a variety of scores can be found (although still concentrated toward four- and five-star reviews). Poorly
-# reviewed rentals will see fewer guests and thus, reviews.
+Although certain property types are more common than others, the distributions are largely similar: it is rare for  a rental to get over 100 reviews if it is not at least a four-star property (rating = 80). This is why under the 100  review line, a variety of scores can be found (although still concentrated toward four- and five-star reviews). Poorly-reviewed rentals will see fewer guests and thus, reviews.
 
-# I'm unsure if all of these property types have been available for the same length of time. For example, hostels and boutique
-# hotels seem to have a moderate number of reviews, but none over 100. I wonder if this is a newer addition to the property types.
+I'm unsure if all of these property types have been available for the same length of time. For example, hostels and boutique hotels seem to have a moderate number of reviews, but none over 100. I wonder if this is a newer addition to the property types.
 
+# 6.2: Make ONE plot to show relationship among property types, room types, bed types, and reviews per month. Explain your findings.
 
-# 6.2: Make ONE plot to show relationship among property types, room types, bed types, and reviews
-# per month. Explain your findings.
-
+```{r message=FALSE}
 # Get a target row count (10,546)
 sum(head(sort(table(airbnb$property_type), decreasing = TRUE), 10))
 
@@ -527,21 +513,16 @@ bwplot(prairbnb$reviews_per_month ~ prairbnb$property_type | prairbnb$bed_type +
        par.strip.text=list(cex=.55),
        cex = .5,
        main = "Reviews Per Month by Property, Room, and Bed Types")
-
+```
 
 # Findings
 
-# This layout is a grid of plots: each row contains one of three room types, and each column contains one of five bedtypes.
-# The property types are shown in the boxplot inside each grid cell. This layout shows that "real bed" is the most common
-# bed type (due to the visual density of the boxplots). Real beds are also found at the most popular listings: all listings
-# with over 10 reviews per month have a real bed. Futons, couches, and airbeds are not common, and the listings that 
-# have them do not have more than five reviews per month. The pull-out sofa is the second-most popular bed type, and it
-# has a couple listings that break the five review per month level. In the Real Bed > Entire Home and Private Room graphs,
-# the large amount of outliers above the whiskers indicate a positively-skewed distribution.
-
+This layout is a grid of plots: each row contains one of three room types, and each column contains one of five bedtypes.
+The property types are shown in the boxplot inside each grid cell. This layout shows that "real bed" is the most common bed type (due to the visual density of the boxplots). Real beds are also found at the most popular listings: all listings with over 10 reviews per month have a real bed. Futons, couches, and airbeds are not common, and the listings that have them do not have more than five reviews per month. The pull-out sofa is the second-most popular bed type, and it has a couple listings that break the five review per month level. In the Real Bed > Entire Home and Private Room graphs, the large amount of outliers above the whiskers indicate a positively-skewed distribution.
 
 # 6.3: Make some plots to explore hypotheses in Q5. Explain your choice and describe interesting findings.
 
+```{r message=FALSE}
 # Create the variables I need. grep() returns row numbers (i.e. row names)
 airbnb$has_pool <- rownames(airbnb) %in% grep("Pool", airbnb$amenities)
 airbnb$has_cable <- rownames(airbnb) %in% grep("Cable TV", airbnb$amenities)
@@ -557,28 +538,27 @@ ggplot(mair, aes(x=factor(variable), y=price)) +
 
 # Get the numbers
 mair %>% group_by(variable, value) %>% summarise(count = n(), mean_price = mean(price))
+```
 
-# First, I filtered the data to eliminate any properties over $500/night. I did this because my
-# hypothetical rental is not in the extreme luxury class. I want to analyze my peer class.
-# Second, I had to format this data into a long table (due to ggplot's handling of boxplot). This
-# has the benefit of placing my plots next to each other for easy comparison.
-# The boxplot shows that the presensce of all of my potential amenities increase the price (at mean and
-# at IQR points). The table indicates that pool, cable, and bbq will increase the mean by 12, 40, and 30
-# dollars per night. To my surprise, the pool had the smallest effect on price, and was also associated 
-# with the lowest prices. Perhaps a pool is less novel in Sydney? Due to the large cost of installation, ongoing
-# costs, and small return, I will rule out the pool.
-# Cable TV and BBQ Grill are both cost-effective. Cable has an ongoing cost that will eat into profits, so I will compare the monthly cost
-# against my occupancy rates and my planned price increase.
-# The BBQ Grill is more of a one-time expense with a strong return. I will choose that one first.
+First, I filtered the data to eliminate any properties over $500/night. I did this because my hypothetical rental is not in the extreme luxury class. I want to analyze my peer class. Second, I had to format this data into a long table (due to ggplot's handling of boxplot). This has the benefit of placing my plots next to each other for easy comparison.
+
+The boxplot shows that the presensce of all of my potential amenities increase the price (at mean and at IQR points). The table indicates that pool, cable, and bbq will increase the mean by 12, 40, and 30 dollars per night. To my surprise, the pool had the smallest effect on price, and was also associated  with the lowest prices. Perhaps a pool is less novel in Sydney? Due to the large cost of installation, ongoing costs, and small return, I will rule out the pool. 
+
+Cable TV and BBQ Grill are both cost-effective. Cable has an ongoing cost that will eat into profits, so I will compare the monthly cost against my occupancy rates and my planned price increase.
+
+The BBQ Grill is more of a one-time expense with a strong return. I will choose that one first.
 
 # Q7
 # 7.1: Clean the price
 
-# Price was cleaned back in step 1 with the following:
+Price was cleaned back in step 1 with the following:
+```{r message=FALSE, eval=FALSE}
 # airbnb$price <- as.numeric(gsub("^\\$|,","",airbnb$price))
+```
 
 # 7.2: Add number of amenities as column
 
+```{r message=FALSE}
 # Amenities are separated by a comma and opened with a curly brace. Count the curly brace and commas for num of amenities
 # This statement is using lapply to make a vector 10815 elements long. gregexpr returns a list, and I need to get the 
 # length of the first element of the list
@@ -590,20 +570,19 @@ airbnb$number_of_amenities <- sapply(airbnb$amenities, function(x) length(strspl
 
 # Clean up the ones; using a within() statment to minimize typing airbnb$
 airbnb <- within(airbnb, number_of_amenities[number_of_amenities == 1] <- 0)
+```
 
 # 7.3: Calculate mean review_scores_rating against cancellation policies. What do you find?
+```{r message=FALSE}
 # Using Base R
 by(airbnb$review_scores_rating, airbnb$cancellation_policy, mean)
 # Using dplyr
 airbnb %>% group_by(cancellation_policy) %>% summarise(mean = mean(review_scores_rating))
-
+```
 # Findings
-# The super-strict cancellation policies have the worst scores -- under 90. These are less guest-friendly.
-# The highest mean was for the moderate policy, which sits between flexible and strict_14_with_grace_period
-# on the guest-friendly scale. Why wouldn't flexible -- as the most guest-friendly --  have the highest ratings? 
-# Perhaps the hosts who choose the flexible policy are more care-free and less professional in their rental?
-# It could also be statistical noise; are 95.00 and 94.15 meaningfully different?
+The super-strict cancellation policies have the worst scores -- under 90. These are less guest-friendly. The highest mean was for the moderate policy, which sits between flexible and strict_14_with_grace_period on the guest-friendly scale. Why wouldn't flexible -- as the most guest-friendly --  have the highest ratings?  Perhaps the hosts who choose the flexible policy are more care-free and less professional in their rental? It could also be statistical noise; are 95.00 and 94.15 meaningfully different?
 
+```{r message=FALSE}
 # Here is a t-test
 t.test(airbnb$review_scores_rating[airbnb$cancellation_policy == "flexible"],airbnb$review_scores_rating[airbnb$cancellation_policy == "moderate"])
 
@@ -612,63 +591,66 @@ t.test(airbnb$review_scores_rating[airbnb$cancellation_policy == "flexible"],air
 sd(airbnb$review_scores_rating[airbnb$cancellation_policy == "flexible"])
 # In this case, I could argue that the mean for "strict_14" falls within +/- 8.67 of the mean flexible. Therefore they are
 # not statistically different.
+```
 
 # Other manipulations
-# Here I use dplyr to get mean scores by types
+Here I use dplyr to get mean scores by types
+```{r message=FALSE}
 airbnb %>% group_by(property_type) %>% summarise(mean = mean(review_scores_rating)) %>% arrange(desc(mean))
 airbnb %>% group_by(room_type) %>% summarise(mean = mean(review_scores_rating)) %>% arrange(desc(mean))
 airbnb %>% group_by(bed_type) %>% summarise(mean = mean(review_scores_rating)) %>% arrange(desc(mean))
 airbnb %>% group_by(number_of_amenities) %>% summarise(mean = mean(review_scores_rating)) %>% arrange(desc(mean))
+```
 
-# I added amenity data in 6.3. 
-# I will add word count data in 10.
-# I will add spatial data in part 4.
+I added amenity data in 6.3. 
+I will add word count data in 10.
+I will add spatial data in part 4.
 
-# Q8
-# Linear Modeling
-# Explain 10 variables; evaluate one
+# Q8: Linear Modeling
+**Explain 10 variables; evaluate one**
 
-# In question four, I established that reviews_per_month was the preferred measure of popularity (the right quadrants
-# were either popular for a long time, or popular for a short time). I will use reviews_per_month as the dependent
-# variable in this exercise.
+In question four, I established that reviews_per_month was the preferred measure of popularity (the right quadrants were either popular for a long time, or popular for a short time). I will use reviews_per_month as the dependent variable in this exercise.
 
-# Reviews per month is a mix of occupancy rate and minimum night stay.
+Reviews per month is a mix of occupancy rate and minimum night stay.
 
-# * Price: I don't think price will affect reviews_per month. Expensive listings could be frequently reviewed (R^2 = 0.008)
-# * Host_is_superhost: (R^2 = 0.088)
-# * Number_of_verifications: This could help, but I'm not sure that that buyers care more about the NUMBER of 
-# verifications, but just that there is at least one.
-# * Cleaning_fee: This might have a small impact (R^2 = 0.01566)
-# * Review_scores_communication: Perhaps hosts with good communication skills will be more likely to receive reviews? Apparently not (R^2 = 0.006)
-# * Host_response_rate: Building off the previous variable, perhaps responsive hosts will be more likely to receive reviews? (R^2 = 0.009)
-# * Room_type: Perhaps shared_room will be less popular than a private room, which may be less popular than an entire house/apt? (R^2 = 0.005)
-# * Number_of_amentities: I think guests will be attracted to listings with a number of amenities, because 1. guests like amenities and
-#  2. multiple amenities can be found on listings with complete descriptions. (R^2 = 0.009)
-# * Zipcode: I believe certain zipcodes will be more popular than others. (R^2 = 0.147)
-# * Minimum_nights: I think this one will have the most correlation (negative slope). (R^2 = 0.015)
+* Price: I don't think price will affect reviews_per month. Expensive listings could be frequently reviewed (R^2 = 0.008)
+* Host_is_superhost: (R^2 = 0.088)
+* Number_of_verifications: This could help, but I'm not sure that that buyers care more about the NUMBER of verifications, but just that there is at least one.
+* Cleaning_fee: This might have a small impact (R^2 = 0.01566)
+* Review_scores_communication: Perhaps hosts with good communication skills will be more likely to receive reviews? Apparently not (R^2 = 0.006)
+* Host_response_rate: Building off the previous variable, perhaps responsive hosts will be more likely to receive reviews? (R^2 = 0.009)
+* Room_type: Perhaps shared_room will be less popular than a private room, which may be less popular than an entire house/apt? (R^2 = 0.005)
+* Number_of_amentities: I think guests will be attracted to listings with a number of amenities, because 1. guests like amenities and 2. multiple amenities can be found on listings with complete descriptions. (R^2 = 0.009)
+* Zipcode: I believe certain zipcodes will be more popular than others. (R^2 = 0.147)
+* Minimum_nights: I think this one will have the most correlation (negative slope). (R^2 = 0.015)
 
+```{r message=FALSE}
 # Zipcode was my winning -- although weak -- correlation. Here's the model and charts
 amodel <- lm(reviews_per_month ~ zipcode, data = airbnb)
 summary(amodel)
 plot(amodel, ask = FALSE)
+```
 
-# The first plot, Residuals vs Fitted, is a scatterplot of residuals (observed y - predicted y). We want this to be approximately zero. This plot helps us to assess the assumptions of linearity (is red line a line around y=0?) and homoscedasticity (is the spread of residuals even along the x axis?). This model has linearity, but the residuals have larger positive values than negative. So the model is not entirely homoscedastic.
-# The second plot, Normal Q-Q, compares the residuals to “ideal” normal observations. We want observations to lie along the 45 degree line in the plot. This model follows fairly closely, but at the extreme theoretical quantiles deviate from the line.
-# The third plot, Scale-Location, shows square-rooted standardized residual vs predicted value and can help visualize homoscedasticity. We want a horizontal line and equal spread of points. This model has some slope in the red line, but is it flat enough? The spread of points seems fairly even.
-# The fourth plot, Residuals vs Leverage, helps to find outliers and overly-influential observations. Here we look for values at the upper-right and lower-left portions of the plot. No outliers exceed the 0.5 Cook’s distance.
-# In all, the diagnostic plots of this model show that it meets the assumptions of linearity, normality, and homoscedasticity. I believe this to be a good model, although the correlation level is small.
+The first plot, Residuals vs Fitted, is a scatterplot of residuals (observed y - predicted y). We want this to be approximately zero. This plot helps us to assess the assumptions of linearity (is red line a line around y=0?) and homoscedasticity (is the spread of residuals even along the x axis?). This model has linearity, but the residuals have larger positive values than negative. So the model is not entirely homoscedastic.
+
+The second plot, Normal Q-Q, compares the residuals to “ideal” normal observations. We want observations to lie along the 45 degree line in the plot. This model follows fairly closely, but at the extreme theoretical quantiles deviate from the line.
+
+The third plot, Scale-Location, shows square-rooted standardized residual vs predicted value and can help visualize homoscedasticity. We want a horizontal line and equal spread of points. This model has some slope in the red line, but is it flat enough? The spread of points seems fairly even.
+
+The fourth plot, Residuals vs Leverage, helps to find outliers and overly-influential observations. Here we look for values at the upper-right and lower-left portions of the plot. No outliers exceed the 0.5 Cook’s distance.
+
+In all, the diagnostic plots of this model show that it meets the assumptions of linearity, normality, and homoscedasticity. I believe this to be a good model, although the correlation level is small.
 
 
 
 ############################
-# PART 3: Further Analysis #
+  PART 3: Further Analysis  
 ############################
-
 
 # Q9
-# 9.1: Explore relationships (if any) between superhost and host_since, host_response_time, host_response_rate.
-# host_verifications, host_identity_verified
+# 9.1: Explore relationships (if any) between superhost and host_since, host_response_time, host_response_rate. host_verifications, host_identity_verified
 
+```{r message=FALSE}
 # STEP 1: Make host_verifications useful
 # Get table of verification counts
 #table(sapply(airbnb$host_verifications, function(x) length(strsplit(x,",")[[1]])))
@@ -706,36 +688,36 @@ zmodel4 <- lm(host_identity_verified ~ host_is_superhost, data = airbnb)
 summary(zmodel4)
 zmodel5 <- lm(as.numeric(host_number_of_days) ~ host_is_superhost, data = airbnb)
 summary(zmodel5)
+```
 
-# All of these models have small (<0.1) R^2 values. I'm beginning to think I should just burn
-# this project down and start with something else.
+All of these models have small (<0.1) R^2 values. I'm beginning to think I should just burn this project down and start with something else.
 
 # 9.2: Create mosaic plot for host_response_time by superhost. What do you learn?
 
+```{r message=FALSE}
 library("ggmosaic")
 ggplot(data = airbnb) +
   geom_mosaic(aes(product(host_response_time, host_is_superhost), fill=host_response_time), na.rm=TRUE) +
   labs(x="Is Superhost", y="Response Times", title="Superhost Response Times") 
+```
 
 # Findings
 
-# A mosaic plot shows percentages of observations across categorical variables.  Here we can see the distribution
-# of host_is_superhost along the x-axis: Superhosts (TRUE) make up less than a third of the total observations
-# (because the FALSE column is more than twice as wide as TRUE). However, we can see the response time distribution along the
-# y-axis, and the data show that over half of Superhosts respond within an hour. This graph includes some imputed data
-# from the cleanup phase. The "unknown" response doesn't necessarily help us in comparing these two groups (although it
-# does describe the condition of our data). If we want, we can remove "unknown" to compare known response times:
+A mosaic plot shows percentages of observations across categorical variables.  Here we can see the distribution of host_is_superhost along the x-axis: Superhosts (TRUE) make up less than a third of the total observations (because the FALSE column is more than twice as wide as TRUE). However, we can see the response time distribution along the y-axis, and the data show that over half of Superhosts respond within an hour. This graph includes some imputed data from the cleanup phase. The "unknown" response doesn't necessarily help us in comparing these two groups (although it does describe the condition of our data). If we want, we can remove "unknown" to compare known response times:
 
+```{r message=FALSE}
 ggplot(data = airbnb %>% filter(host_response_time != "unknown")) +
   geom_mosaic(aes(product(host_response_time, host_is_superhost), fill=host_response_time), na.rm=TRUE) +
   labs(x="Is Superhost", y="Response Times", title="Superhost Response Times", subtitle = "Known response times") 
+```
 
-# Here we can see that, based on known response times, Superhosts respond more quickly than non-Superhosts.
+Here we can see that, based on known response times, Superhosts respond more quickly than non-Superhosts.
 
 # Q10
-# 10.1: Extract unique words in description and eliminate stop words. Store in dataframe and sort decreasing.
-# What do you infer from words with top 10 frequency?
 
+# 10.1: Extract unique words in description and eliminate stop words. Store in dataframe and sort decreasing. What do you infer from words with top 10 frequency?
+
+```{r message=FALSE}
 # Get all "words", splitting on space
 #all_words <- unlist(strsplit(airbnb[1:3,2], "[[:space:]]"))
 # Extract only alpha letters
@@ -793,16 +775,17 @@ table(airbnb$beach_desc)
 mean(airbnb$price)
 by(airbnb$price, airbnb$beach_desc, mean)
 airbnb %>% group_by(beach_desc) %>% summarise(mean(price))
-
+```
 
 # Findings
-# The average price for all listings is $203.16. Listings that mention "beach" or "beaches" average price is 
-# $236.91 ($33.75 above average). Listings without those words average $177.25 ($25.51 below average).
-# Compared to each other, a beach listing is priced 33% higher.
+The average price for all listings is \$203.16. Listings that mention "beach" or "beaches" average price is  \$236.91 (\$33.75 above average). Listings without those words average \$177.25 (\$25.51 below average).
+
+Compared to each other, a beach listing is priced 33% higher.
 
 
 # 10.2b: Explore multiple high frequency words. Write a function to get word frequency by row.
 
+```{r message=FALSE}
 count_word_in_desc <- function(w, v){
   # funcname: count_word_in_desc
   # inputs  : A word (character string) to search for, a vector to search in
@@ -830,10 +813,11 @@ airbnb %>% group_by(wc_beach>0) %>% summarise(n = n(), avg_price = mean(price), 
 # What listings are different?
 diffs <- airbnb$description[airbnb$beach_desc == FALSE & airbnb$wc_beach > 0]
 table(regmatches(diffs, regexpr("beach[[:alpha:]]*", diffs)))
-
+```
 
 # 10.3: Select at least 3 other words from your dataframe and do similar analysis. What conclusions do you find?
 
+```{r message=FALSE}
 airbnb$wc_kitchen <- unlist(lapply(airbnb$description, function(x) count_word_in_desc("kitchen",x)))
 airbnb$wc_restaurants <- unlist(lapply(airbnb$description, function(x) count_word_in_desc("restaurants",x)))
 airbnb$wc_bus <- unlist(lapply(airbnb$description, function(x) count_word_in_desc("bus",x)))
@@ -846,30 +830,29 @@ airbnb %>% group_by(wc_restaurants>0) %>% summarise(n = n(), avg_price = mean(pr
 airbnb %>% group_by(wc_bus>0) %>% summarise(n = n(), avg_price = mean(price), avg_review = mean(review_scores_rating))
 airbnb %>% group_by(wc_walk>0) %>% summarise(n = n(), avg_price = mean(price), avg_review = mean(review_scores_rating))
 airbnb %>% group_by(wc_balcony>0) %>% summarise(n = n(), avg_price = mean(price), avg_review = mean(review_scores_rating))
+```
 
-# Findings
+## Findings
 
-# Scanning the top words, I looked for words that indicated something possibly unique about a listing (e.g. kitchen) versus
-# something more routine (e.g., bed). I focused on a few areas: food (kitchen vs restaurants), transportation (bus vs walking),
-# and the balcony (just curious about it more than anything).
+Scanning the top words, I looked for words that indicated something possibly unique about a listing (e.g. kitchen) versus something more routine (e.g., bed). I focused on a few areas: food (kitchen vs restaurants), transportation (bus vs walking), and the balcony (just curious about it more than anything).
 
-# Effect on Review Score
-# What I found is that these words had a small effect on the average review (the largest spread was 0.4, or just under
-# a quarter-star difference: "walk" and "restaurants" both scored higher than their non-walk and non-restaurant counterparts).
+### Effect on Review Score
+What I found is that these words had a small effect on the average review (the largest spread was 0.4, or just under a quarter-star difference: "walk" and "restaurants" both scored higher than their non-walk and non-restaurant counterparts).
 
-# Effect on Price
-# Food: Presence of either "kitchen" or "restaurant" is tied to a lower average price. Kitchen is $12 less than non-kitchen,
-# and restaurant is $26 less than non-restaurant.
-# Transportation: Presence of "bus" and "walk" are both linked to lower average price. Bus is $54 less than non-bus, and walk is $28 less
-# than non-walk. It seems that nobody really wants to think about taking the bus.
-# Balcony: Presence of "balcony" is also related to lower average price -- $14 less if the description mentions "balcony".
+### Effect on Price
+Food: Presence of either "kitchen" or "restaurant" is tied to a lower average price. Kitchen is \$12 less than non-kitchen, and restaurant is \$26 less than non-restaurant.
+
+Transportation: Presence of "bus" and "walk" are both linked to lower average price. Bus is \$54 less than non-bus, and walk is \$28 less than non-walk. It seems that nobody really wants to think about taking the bus.
+
+Balcony: Presence of "balcony" is also related to lower average price -- \$14 less if the description mentions "balcony".
 
 # Q10(2)
 # Q10(2).1 Choose between zip code or city. Justify. Calculate number of listings for each in category. Filter to top 100.
-# Explore whether top 100 have higher weighted ratings. Graph and explain your findings.
+**Explore whether top 100 have higher weighted ratings. Graph and explain your findings.**
 
-# The city data is very messy, with case and formatting issues. I'm going to use zip code data.
+The city data is very messy, with case and formatting issues. I'm going to use zip code data.
 
+```{r message=FALSE}
 # Grab the top 100, but exclude the "unknown" that I imputed earlier.
 #head(sort(table(airbnb$zipcode[airbnb$zipcode != "unknown"]), decreasing = TRUE), 100)
 
@@ -884,13 +867,13 @@ airbnb %>% filter(zipcode %in% zip100) %>% select(c(zipcode, review_scores_ratin
 
 # How many observations (listings) are not in the top 100 postal codes?
 airbnb %>% filter(!(zipcode %in% zip100)) %>% count()
+```
 
-# This makes little sense. The top 100 zipcodes is most of the data set -- 10,291 of the 10,815 observations. Can I
-# reduce this number, like show the top 50? Am I supposed to use the inconsistently-named cities? Or am I actually to compare 10,291 to 524
-# observations?
-# Instead, I will show the trend of the top 100, putting each of the 100 zipcodes on the x-axis and showing the 
-# weighted mean.
+This makes little sense. The top 100 zipcodes is most of the data set -- 10,291 of the 10,815 observations. Can I reduce this number, like show the top 50? Am I supposed to use the inconsistently-named cities? Or am I actually to compare 10,291 to 524 observations?
 
+Instead, I will show the trend of the top 100, putting each of the 100 zipcodes on the x-axis and showing the  weighted mean.
+
+```{r message=FALSE}
 wmeans <- airbnb %>% filter(zipcode %in% zip100) %>% select(c(zipcode, review_scores_rating, number_of_reviews)) %>% group_by(zipcode) %>% summarise(wmean = weighted.mean(review_scores_rating, number_of_reviews))
 wmeans <- sort(wmeans$wmean)
 
@@ -901,9 +884,11 @@ ggplot(wmeans, aes(x = id, y = wmean)) +
   geom_point() +
   geom_line() +
   labs("x = ID", y = "Weighted ", title = "Average Weighted Review Ratings by Postcode", subtitle = "Weighted by Number of Reviews")
-
+```
 
 # Q10(2).2: Choose two other aspects from description that may improve the weighted mean of review_scores_rating
+
+```{r message=FALSE}
 # Superhosts should count for twice as much as regular hosts
 #    as.numeric(airbnb$host_is_superhost) + 1 # I dunno, this was breaking the weighted mean
 # Let's emphasize value
@@ -919,17 +904,17 @@ ggplot(wmeans, aes(x = id, y = wmean)) +
   geom_point() +
   geom_line() +
   labs("x = ID", y = "Weighted ", title = "Average Weighted Review Ratings by Postcode", subtitle = "Weighted by Number of Reviews, Superhost, and Value Score")
+```
 
-# I don't think I chose the right variables to add to the graph, and the Superhost weighted value was breaking for me.
-# What stands out is that most of the average scores are between 94 and 97. Extreme values are likely caused by lower n
-# values.
+I don't think I chose the right variables to add to the graph, and the Superhost weighted value was breaking for me. What stands out is that most of the average scores are between 94 and 97. Extreme values are likely caused by lower n values.
 
 #####################
-# PART 4: Your Turn #
+  PART 4: Your Turn 
 #####################
 
 # Conduct further analysis
 
+```{r message=FALSE}
 #install.packages(c("sp", "rgdal"))
 library(sp)
 library(rgdal)
@@ -977,41 +962,31 @@ print(sp_out_walk, split=c(1, 1, 2, 1), more=TRUE)
 # Plot Bus Mentions - ZOOM IN
 sp_out_bus <- spplot(sydneylyr, "bus", main = "Listings with 'Bus' in Description", col = "transparent", xlim = edges[1, ], ylim = edges[2, ])
 print(sp_out_bus, split=c(2, 1, 2, 1), more=FALSE) 
-
+```
 
 # Findings
-# To start with, postal codes are dynamic features that change over time. These are from 2016, which is within
-# the date range of our analysis, and thus a suitable dataset for use.
+To start with, postal codes are dynamic features that change over time. These are from 2016, which is within the date range of our analysis, and thus a suitable dataset for use.
 
-# I wanted to further explore the transportation options in the description. My hypothesis was that there would be
-# more mentions of bus in postcodes a little further from the most central.
+I wanted to further explore the transportation options in the description. My hypothesis was that there would be more mentions of bus in postcodes a little further from the most central.
 
-# My methodology was to take the word counts of each target word in the description, and calculate (mutate) a logical variable
-# for analysis that would contain TRUE if the listing contained the target word. Then, summing the raw counts, display them
-# on the map.
+My methodology was to take the word counts of each target word in the description, and calculate (mutate) a logical variable for analysis that would contain TRUE if the listing contained the target word. Then, summing the raw counts, display them on the map.
 
-# I also attempted this with normalizing the data by listings, so it created a density -- or percent of listings in a postcode
-# containing the target words. However, this was skewed by the more rural postcodes with fewer listings, and the map
-# appeared a mess.
+I also attempted this with normalizing the data by listings, so it created a density -- or percent of listings in a postcode containing the target words. However, this was skewed by the more rural postcodes with fewer listings, and the map appeared a mess.
 
-# In using the raw counts, there is an inherent bias where postcodes with more listings will have more listings containing
-# the target words, assuming an even distribution. In effect, this ultimately shows the postcodes with the most listings.
+In using the raw counts, there is an inherent bias where postcodes with more listings will have more listings containing the target words, assuming an even distribution. In effect, this ultimately shows the postcodes with the most listings.
 
-# However, the side by side choropleth maps still provide some value, because the color ramp is symbolized relative to 
-# each target word, and we can compare the colors to detect any patterns.
+However, the side by side choropleth maps still provide some value, because the color ramp is symbolized relative to each target word, and we can compare the colors to detect any patterns.
 
-# In this analysis, I see higher values for "bus" through the periphery (the medium shades of blue), and thus my
-# hypothesis seems to be supported, but not strongly. More statistical analysis is required (but impossible due to
-# time contstraints).
+In this analysis, I see higher values for "bus" through the periphery (the medium shades of blue), and thus my hypothesis seems to be supported, but not strongly. More statistical analysis is required (but impossible due to time contstraints).
 
 ######################
-# PART 5: Conclusion #
+  PART 5: Conclusion 
 ######################
 
 
 
 #####################################
-# PART 6: Lifecycle of Data Science #
+  PART 6: Lifecycle of Data Science 
 #####################################
 
 
