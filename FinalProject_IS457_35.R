@@ -73,12 +73,21 @@ airbnb$host_identity_verified <- as.logical(toupper(airbnb$host_identity_verifie
 
 # 1.2: How will you deal with missing values? Justify your methods.
 
-# PHIL
+# For categorical data with missing values (such as city, zipcode, response_time), I imputed a value of "unknown." This 
+# preserves the known data, and allows for omission of this value if necessary. I find it preferable to reduce the number
+# of observations than to potentially impute incorrect values.
+
+# For numerical data, I used the median. This value is not affected by outliers. It is simply the value where half of
+# the observations are higher, and half are lower. 
 
 
 # 1.3: Describe how your choice method may impact later analysis.
 
-# PHIL
+# Imputing "unknown" for categorical data adds another category. It helps to preserve the known values for that
+# observation, so na.rm() won't remove the observation with the analyst possibly being unaware of its removal.
+
+# Imputing median values will increase the measure of centrality, while reducing the variance and standard deviation
+# for those variables.
 
 # 1.4: Implement methods to deal with missing values.
 
@@ -112,7 +121,7 @@ airbnb$city[is.na(airbnb$city)] <- "unknown"
 airbnb$zipcode[is.na(airbnb$zipcode)] <- "unknown"
 
 # NA bathrooms
-airbnb$bathrooms[is.na(airbnb$bathrooms)] <- getmode(airbnb$bathrooms)
+airbnb$bathrooms[is.na(airbnb$bathrooms)] <- median(airbnb$bathrooms, na.rm = TRUE)
 
 # NA bedrooms
 # Description calls this one a studio (no bedroom)
@@ -166,6 +175,7 @@ col_continuous <- c(6,8,22:34,36)
 
 counts <- lapply(airbnb[,col_categories], function(x) table(x))
 summaries <- lapply(airbnb[,col_continuous], function(x) summary(x))
+sds <- lapply(airbnb[,col_continuous], function(x) sd(x))
 
 counts
 
@@ -184,6 +194,7 @@ counts
 # cancellation_policy: Five categories -- flexible, moderate, strict and two levels of super_strict. I wonder if this affects reviews?
 
 summaries
+sds
 
 # Summaries help with quartiles and ranges, skew can be somewhat interpreted by comparing median to mean.
 
@@ -200,11 +211,10 @@ summaries
 # reviews_per_month: effectively -- number_of_reviews / number of months listed. median .95, mean 1.5. max of 15.18 (averaging a new guest every other night!)
 
 
+
 # Q3
 # Explore comprehensively with charts, tables, and graphs
 # 3.1: Think about types of variables; choose appropriate graphs to find distributions and trends
-
-# PHIL
 
 # Date / Host Growth Over Time
 ggplot(data = airbnb, aes(x = host_since)) +
@@ -308,11 +318,13 @@ boxplot(airbnb[29:34], las=1, main = "Distribution of Scores")
 
 # For variables with similar value scale, a boxplot does a good job of showing distribution statistics in a side-by-side fashion.
 
-# PHIL
-
 # 3.3: Describe what you find from the graphs
 
-# PHIL
+# Some of the categorical values have an even distribution (e.g., host_verified), but most have values that are more
+# common than others. Bed_type is mostly "real bed". Property_type are predominantly house and apartment, even though
+# there are 31 types.
+# Most of the review scores are focused on the high end of the scale, so they have a small standard deviations (<1). 
+# In retrospect, I could have done a litt
 
 # Q4
 # 4.1: Compare and contrast review_per_month and number_of_reviews
@@ -458,9 +470,10 @@ ggplot(data = airbnb, aes(cleaning_fee, reviews_per_month)) +
   ylab("Reviews Per Month")
 
 
-
 # Findings
-# PHIL EXPLAIN
+# Here I have a graph showing how the reviews_per_month relate to the cleaning fee. The blue line
+# is the line of best fit. With a negative slope, this implies that as the cleaning fee increases,
+# the reviews_per_month decreases.
 
 # Q5
 # Propose three different hypotheses for business analysis
@@ -591,17 +604,25 @@ airbnb %>% group_by(cancellation_policy) %>% summarise(mean = mean(review_scores
 # Perhaps the hosts who choose the flexible policy are more care-free and less professional in their rental?
 # It could also be statistical noise; are 95.00 and 94.15 meaningfully different?
 
-#PHIL NOT SURE
+# Here is a t-test
 t.test(airbnb$review_scores_rating[airbnb$cancellation_policy == "flexible"],airbnb$review_scores_rating[airbnb$cancellation_policy == "moderate"])
 
-# PHIL MORE DATA MANIP u doin it in 6.3
-# DPLYR
+# I have run the t-test, and I THINK that because the p value is < .05, I will reject the null hypothesis.
+# Then again, I feel in this class we would find the standard deviation which for "flexible" is 8.67.
+sd(airbnb$review_scores_rating[airbnb$cancellation_policy == "flexible"])
+# In this case, I could argue that the mean for "strict_14" falls within +/- 8.67 of the mean flexible. Therefore they are
+# not statistically different.
+
+# Other manipulations
+# Here I use dplyr to get mean scores by types
 airbnb %>% group_by(property_type) %>% summarise(mean = mean(review_scores_rating)) %>% arrange(desc(mean))
 airbnb %>% group_by(room_type) %>% summarise(mean = mean(review_scores_rating)) %>% arrange(desc(mean))
 airbnb %>% group_by(bed_type) %>% summarise(mean = mean(review_scores_rating)) %>% arrange(desc(mean))
 airbnb %>% group_by(number_of_amenities) %>% summarise(mean = mean(review_scores_rating)) %>% arrange(desc(mean))
 
 # I added amenity data in 6.3. 
+# I will add word count data in 10.
+# I will add spatial data in part 4.
 
 # Q8
 # Linear Modeling
@@ -611,13 +632,31 @@ airbnb %>% group_by(number_of_amenities) %>% summarise(mean = mean(review_scores
 # were either popular for a long time, or popular for a short time). I will use reviews_per_month as the dependent
 # variable in this exercise.
 
-# ind vars: Price, Rating, num amenities, num verifications, review_scores_value
-# zipcode is highest so far
+# Reviews per month is a mix of occupancy rate and minimum night stay.
 
-amodel <- lm(reviews_per_month ~ host_is_superhost, data = airbnb)
+# * Price: I don't think price will affect reviews_per month. Expensive listings could be frequently reviewed (R^2 = 0.008)
+# * Host_is_superhost: (R^2 = 0.088)
+# * Number_of_verifications: This could help, but I'm not sure that that buyers care more about the NUMBER of 
+# verifications, but just that there is at least one.
+# * Cleaning_fee: This might have a small impact (R^2 = 0.01566)
+# * Review_scores_communication: Perhaps hosts with good communication skills will be more likely to receive reviews? Apparently not (R^2 = 0.006)
+# * Host_response_rate: Building off the previous variable, perhaps responsive hosts will be more likely to receive reviews? (R^2 = 0.009)
+# * Room_type: Perhaps shared_room will be less popular than a private room, which may be less popular than an entire house/apt? (R^2 = 0.005)
+# * Number_of_amentities: I think guests will be attracted to listings with a number of amenities, because 1. guests like amenities and
+#  2. multiple amenities can be found on listings with complete descriptions. (R^2 = 0.009)
+# * Zipcode: I believe certain zipcodes will be more popular than others. (R^2 = 0.147)
+# * Minimum_nights: I think this one will have the most correlation (negative slope). (R^2 = 0.015)
+
+# Zipcode was my winning -- although weak -- correlation. Here's the model and charts
 amodel <- lm(reviews_per_month ~ zipcode, data = airbnb)
 summary(amodel)
-plot(amodel)
+plot(amodel, ask = FALSE)
+
+# The first plot, Residuals vs Fitted, is a scatterplot of residuals (observed y - predicted y). We want this to be approximately zero. This plot helps us to assess the assumptions of linearity (is red line a line around y=0?) and homoscedasticity (is the spread of residuals even along the x axis?). This model has linearity, but the residuals have larger positive values than negative. So the model is not entirely homoscedastic.
+# The second plot, Normal Q-Q, compares the residuals to “ideal” normal observations. We want observations to lie along the 45 degree line in the plot. This model follows fairly closely, but at the extreme theoretical quantiles deviate from the line.
+# The third plot, Scale-Location, shows square-rooted standardized residual vs predicted value and can help visualize homoscedasticity. We want a horizontal line and equal spread of points. This model has some slope in the red line, but is it flat enough? The spread of points seems fairly even.
+# The fourth plot, Residuals vs Leverage, helps to find outliers and overly-influential observations. Here we look for values at the upper-right and lower-left portions of the plot. No outliers exceed the 0.5 Cook’s distance.
+# In all, the diagnostic plots of this model show that it meets the assumptions of linearity, normality, and homoscedasticity. I believe this to be a good model, although the correlation level is small.
 
 
 
@@ -641,6 +680,8 @@ airbnb$number_of_verifications <- sapply(airbnb$host_verifications, function(x) 
 # Clean up the ones; some values of 1 are empty; these are []
 airbnb <- within(airbnb, number_of_verifications[host_verifications == "[]"] <- 0)
 
+
+# Some graphs
 ggplot(airbnb, aes(host_is_superhost, host_response_rate, fill = host_is_superhost)) +
   geom_violin() +
   labs(x = "Host is Superhost", y = "Host Response Rate", title = "Host Response Rate by Superhost")
@@ -654,18 +695,20 @@ ggplot(airbnb, aes(host_is_superhost, host_number_of_days, fill = host_is_superh
   labs(x = "Host is Superhost", y = "Time as Host (Days)", title = "Days as Host by Superhost")
 
 
+# Some models
+zmodel1 <- lm(host_response_rate ~ host_is_superhost, data = airbnb)
+summary(zmodel1)
+#zmodel2 <- lm(host_response_time ~ host_is_superhost, data = airbnb) # this one is failing
+#summary(zmodel2)
+zmodel3 <- lm(number_of_verifications ~ host_is_superhost, data = airbnb)
+summary(zmodel3)
+zmodel4 <- lm(host_identity_verified ~ host_is_superhost, data = airbnb)
+summary(zmodel4)
+zmodel5 <- lm(as.numeric(host_number_of_days) ~ host_is_superhost, data = airbnb)
+summary(zmodel5)
 
-#mair <- airbnb %>% select(c("id", "host_is_superhost", "host_response_time", "host_response_rate", "number_of_verifications")) %>% melt(id=c("id", "host_is_superhost"))
-#ggplot(mair, aes(x=factor(variable), y=price)) + 
-#  geom_boxplot(aes(fill = value))+
-#  ggtitle("Amenity Influence in < $500 AirBnB") +
-#  xlab("Amenity") +
-#  ylab("Price Per Night")
-#ggplot(data = airbnb, aes(host_is_superhost, reviews_per_month)) +
-#  geom_boxplot() +
-#  ggtitle("Reviews Per Month by Price") +
-#  xlab("Is Superhost") +
-#  ylab("Reviews Per Month")
+# All of these models have small (<0.1) R^2 values. I'm beginning to think I should just burn
+# this project down and start with something else.
 
 # 9.2: Create mosaic plot for host_response_time by superhost. What do you learn?
 
